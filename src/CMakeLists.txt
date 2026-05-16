@@ -11,10 +11,9 @@ target_sources(interpreter
         parser/parser.cpp
         
         # AST
-        ast/ast_node.cpp
         ast/expression.cpp
         ast/statement.cpp
-        ast/declaration.cpp
+        
         
         # Semantic analysis
         semantics/symbol_table.cpp
@@ -26,7 +25,9 @@ target_sources(interpreter
         runtime/interpreter.cpp
 
         # Core
-        core/token.cpp)
+        core/error_report.cpp 
+        core/type.cpp
+)
 
 target_include_directories(interpreter
     PUBLIC

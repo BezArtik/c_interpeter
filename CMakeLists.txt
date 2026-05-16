@@ -2,6 +2,7 @@
 project(interpreter)
 
 add_subdirectory(src)
+add_subdirectory(samples)
 
 if(BUILD_TESTING)
     enable_testing()
