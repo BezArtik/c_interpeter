@@ -17,26 +17,26 @@ void environment::pop_scope() {
     }
 }
 
-void environment::define(const std::string& name, value val) {
-    scopes_.back()->values_[name] = std::move(val);
+void environment::define(const std::string& name_, value val) {
+    scopes_.back()->values_[name_] = std::move(val);
 }
 
-void environment::assign(const std::string& name, value val) {
+void environment::assign(const std::string& name_, value val) {
     for (auto it = scopes_.rbegin(); it != scopes_.rend(); ++it) {
         auto& values = (*it)->values_;
-        auto found = values.find(name);
+        auto found = values.find(name_);
         if (found != values.end()) {
             found->second = std::move(val);
             return;
         }
     }
-    throw std::runtime_error("Assignment to undefined variable '" + name + "'");
+    throw std::runtime_error("Assignment to undefined variable '" + name_ + "'");
 }
 
-std::optional<value> environment::get(const std::string& name) const {
+std::optional<value> environment::get(const std::string& name_) const {
     for (auto it = scopes_.rbegin(); it != scopes_.rend(); ++it) {
         const auto& values = (*it)->values_;
-        auto found = values.find(name);
+        auto found = values.find(name_);
         if (found != values.end()) {
             return found->second;
         }
@@ -44,8 +44,8 @@ std::optional<value> environment::get(const std::string& name) const {
     return std::nullopt;
 }
 
-bool environment::contains(const std::string& name) const {
-    return get(name).has_value();
+bool environment::contains(const std::string& name_) const {
+    return get(name_).has_value();
 }
 
 }

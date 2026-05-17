@@ -1,9 +1,10 @@
 #pragma once
-#include "ast/ast_node.hpp"
+
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 #include "core/token.hpp"
 #include "core/error_report.hpp"
+#include "core/type.hpp"
 #include <vector>
 #include <memory>
 #include <string_view>
@@ -11,15 +12,12 @@
 namespace parser {
 
 class parser {
-    using ptr_statement = std::unique_ptr<ast::statement>;
-    using ptr_expression = std::unique_ptr<ast::expression>;
 public:
     parser(const std::vector<core::token>& tokens, core::error_reporter& reporter);
 
-    std::vector<ptr_statement> parse();
+    std::vector<std::unique_ptr<ast::statement>> parse();
 
 private:
-
     const core::token& advance();
     const core::token& peek() const;
     const core::token& prev() const;
@@ -28,17 +26,20 @@ private:
     bool match(std::initializer_list<core::token_type> types);
     const core::token& consume(core::token_type type, std::string_view msg);
 
-    ptr_statement declaration();
-    ptr_statement statement();
-    ptr_statement while_statement();
-    ptr_statement block_statement();
-    ptr_statement var_declaration(core::value_type type);
+    std::unique_ptr<ast::statement> declaration();
+    std::unique_ptr<ast::statement> statement();
+    std::unique_ptr<ast::statement> var_declaration(core::value_type type);
+    std::unique_ptr<ast::statement> while_statement();
+    std::unique_ptr<ast::statement> if_statement();
+    std::unique_ptr<ast::statement> block_statement();
 
-    ptr_expression term();
-    ptr_expression factor();
-    ptr_expression expression();
-    ptr_expression equality();
-    ptr_expression primary();
+    std::unique_ptr<ast::expression> expression();
+    std::unique_ptr<ast::expression> equality();
+    std::unique_ptr<ast::expression> comparison();
+    std::unique_ptr<ast::expression> term();
+    std::unique_ptr<ast::expression> factor();
+    std::unique_ptr<ast::expression> unary();
+    std::unique_ptr<ast::expression> primary();
 
     void synchronize();
 
@@ -47,4 +48,4 @@ private:
     size_t current_ = 0;
 };
 
-}
+} 

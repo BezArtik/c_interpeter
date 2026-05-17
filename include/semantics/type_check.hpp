@@ -11,7 +11,7 @@ namespace semantics {
 
 class type_checker {
 public:
-    type_checker(core::error_reporter& reporter);
+    explicit type_checker(core::error_reporter& reporter);
 
     bool check(const std::vector<std::unique_ptr<ast::statement>>& statements);
 
@@ -24,11 +24,13 @@ private:
     void check_var_declaration(const ast::var_declaration& stmt);
     void check_block(const ast::block_stmt& stmt);
     void check_while(const ast::while_stmt& stmt);
+    void check_if(const ast::if_stmt& stmt);
 
     core::value_type type_of(const ast::expression& expr);
     core::value_type type_of_literal(const ast::literal_expr& expr);
     core::value_type type_of_variable(const ast::variable_expr& expr);
     core::value_type type_of_binary(const ast::binary_expr& expr);
+    core::value_type type_of_unary(const ast::unary_expr& expr);
 };
 
-} 
+}

@@ -87,9 +87,9 @@ void lexer::consume_identifier() {
 
     std::string_view text = source_.substr(start_, current_ - start_);
     auto it = keywords.find(text);
-    core::token_type type = (it != keywords.end()) ? it->second : core::token_type::IDENTIFIER;
+    core::token_type type_ = (it != keywords.end()) ? it->second : core::token_type::IDENTIFIER;
 
-    add_token(type);
+    add_token(type_);
 }
 
 void lexer::consume_number() {
@@ -147,9 +147,9 @@ bool lexer::is_at_end() const {
     return current_ >= source_.length();
 }
 
-void lexer::add_token(core::token_type type) {
+void lexer::add_token(core::token_type type_) {
     std::string_view text = source_.substr(start_, current_ - start_);
-    tokens_.push_back({ type, text, line_, column_ });
+    tokens_.push_back({ type_, text, line_, column_ });
 }
 
 

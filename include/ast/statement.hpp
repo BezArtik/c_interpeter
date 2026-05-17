@@ -1,40 +1,53 @@
 #pragma once
 
 #include "ast/expression.hpp"
-#include "core/token.hpp"
 #include "core/type.hpp"
 #include <vector>
+#include <variant>
+#include <memory>
 
 namespace ast {
 
-class expression_stmt : public statement {
-public:
-    expression_stmt(std::unique_ptr<expression> expr);
+struct expression_stmt {
     std::unique_ptr<expression> expr_;
 };
 
-class var_declaration : public statement {
-public:
-    var_declaration(core::value_type type, core::token name, std::unique_ptr<expression> initializer);
-
+struct var_declaration {
     core::value_type type_;
     core::token name_;
     std::unique_ptr<expression> initializer_;
 };
 
-class block_stmt : public statement {
-public:
-    block_stmt(std::vector<std::unique_ptr<statement>> statements);
-
-    std::vector<std::unique_ptr<statement>> statements_;
+struct block_stmt {
+    std::vector<std::unique_ptr<struct statement>> statements_;
 };
 
-class while_stmt : public statement {
-public:
-    while_stmt(std::unique_ptr<expression> condition, std::unique_ptr<statement> body);
-
+struct while_stmt {
     std::unique_ptr<expression> condition_;
-    std::unique_ptr<statement> body_;
+    std::unique_ptr<struct statement> body_;
 };
 
-} 
+struct if_stmt {
+    std::unique_ptr<expression> condition_;
+    std::unique_ptr<struct statement> then_branch_;
+    std::unique_ptr<struct statement> else_branch_;
+};
+
+struct statement {
+    std::variant<
+        expression_stmt,
+        var_declaration,
+        block_stmt,
+        while_stmt,
+        if_stmt
+    > data_;
+
+    statement();
+    statement(expression_stmt s);
+    statement(var_declaration s);
+    statement(block_stmt s);
+    statement(while_stmt s);
+    statement(if_stmt s);
+};
+
+}

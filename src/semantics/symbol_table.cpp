@@ -16,15 +16,15 @@ void symbol_table::pop_scope() {
     }
 }
 
-void symbol_table::define(const std::string& name, core::value_type type) {
+void symbol_table::define(const std::string& name_, core::value_type type_) {
     auto& current = *scopes_.back();
-    current.symbols_[name] = symbol_info{ type, false };
+    current.symbols_[name_] = symbol_info{ type_, false };
 }
 
-std::optional<symbol_info> symbol_table::lookup(const std::string& name) const {
+std::optional<symbol_info> symbol_table::lookup(const std::string& name_) const {
     for (auto it = scopes_.rbegin(); it != scopes_.rend(); ++it) {
         const auto& symbols = (*it)->symbols_;
-        auto found = symbols.find(name);
+        auto found = symbols.find(name_);
         if (found != symbols.end()) {
             return found->second; 
         }
@@ -32,15 +32,15 @@ std::optional<symbol_info> symbol_table::lookup(const std::string& name) const {
     return std::nullopt;
 }
 
-bool symbol_table::defined_locally(const std::string& name) const {
+bool symbol_table::defined_locally(const std::string& name_) const {
     const auto& symbols = scopes_.back()->symbols_;
-    return symbols.find(name) != symbols.end();
+    return symbols.find(name_) != symbols.end();
 }
 
-void symbol_table::mark_initialized(const std::string& name) {
+void symbol_table::mark_initialized(const std::string& name_) {
     for (auto it = scopes_.rbegin(); it != scopes_.rend(); ++it) {
         auto& symbols = (*it)->symbols_;
-        auto found = symbols.find(name);
+        auto found = symbols.find(name_);
         if (found != symbols.end()) {
             found->second.initialized = true;
             return;

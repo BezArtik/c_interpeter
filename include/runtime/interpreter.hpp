@@ -18,19 +18,21 @@ public:
 
 private:
     core::error_reporter& reporter_;
-    std::unique_ptr<environment> global_env_; 
-    environment* current_env_;           
+    std::unique_ptr<environment> global_env_;
+    environment* current_env_;
 
     void execute(const ast::statement& stmt);
     void execute_expression_stmt(const ast::expression_stmt& stmt);
     void execute_var_declaration(const ast::var_declaration& stmt);
     void execute_block(const ast::block_stmt& stmt);
     void execute_while(const ast::while_stmt& stmt);
+    void execute_if(const ast::if_stmt& stmt);
 
     value evaluate(const ast::expression& expr);
     value evaluate_literal(const ast::literal_expr& expr);
     value evaluate_variable(const ast::variable_expr& expr);
     value evaluate_binary(const ast::binary_expr& expr);
+    value evaluate_unary(const ast::unary_expr& expr);
 };
 
 }
