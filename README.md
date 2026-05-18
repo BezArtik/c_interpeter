@@ -114,7 +114,6 @@ Pipeline: source -> Lexer -> tokens -> Parser -> AST -> TypeChecker -> checked A
 
 ## Limitations
 
-- No implicit type conversion between int and double
 - No arrays, pointers, or structs
 - No for loops, &&, || operators
 - Strings without escape sequences
