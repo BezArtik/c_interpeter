@@ -7,17 +7,6 @@
 
 namespace lexer {
 
-static const std::unordered_map<std::string_view, core::token_type> keywords = {
-    {"while",  core::token_type::WHILE},
-    {"if",     core::token_type::IF},
-    {"else",   core::token_type::ELSE},
-    {"return", core::token_type::RETURN},
-    {"int",    core::token_type::INT_KEYWORD},
-    {"double", core::token_type::DOUBLE_KEYWORD},
-    {"true",   core::token_type::TRUE},
-    {"false",  core::token_type::FALSE}
-};
-
 lexer::lexer(std::string_view source, core::error_reporter& reporter)
     : source_(source), reporter_(reporter) {
 }
@@ -86,11 +75,10 @@ void lexer::scan_token() {
 void lexer::consume_identifier() {
     while (std::isalnum(peek()) || peek() == '_') advance();
 
-    std::string_view text = source_.substr(start_, current_ - start_);
-    auto it = keywords.find(text);
-    core::token_type type_ = (it != keywords.end()) ? it->second : core::token_type::IDENTIFIER;
+    std::string_view lexeme = source_.substr(start_, current_ - start_);
 
-    add_token(type_);
+    auto kw = core::lookup_keyword(lexeme);
+    kw ? add_token(*kw) : add_token(core::token_type::IDENTIFIER);
 }
 
 void lexer::consume_number() {

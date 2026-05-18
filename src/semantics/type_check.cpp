@@ -152,7 +152,9 @@ void type_checker::check_func_declaration(const ast::func_declaration& stmt) {
     auto prev_return_type = curr_return_type_;
     curr_return_type_ = stmt.return_type_;
 
-    check_statement(*stmt.body_);
+    for (const auto& s : stmt.body_->statements_) {
+        check_statement(*s);
+    }
 
     curr_return_type_ = prev_return_type;
     symbols_.pop_scope();

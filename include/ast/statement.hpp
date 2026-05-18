@@ -47,7 +47,7 @@ struct func_declaration {
     core::value_type return_type_;
     core::token name_;
     std::vector<func_param> params_;
-    std::unique_ptr<statement> body_;
+    std::unique_ptr<block_stmt> body_;
 };
 
 struct statement {

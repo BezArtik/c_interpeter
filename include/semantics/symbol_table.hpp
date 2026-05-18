@@ -21,9 +21,9 @@ struct func_info {
 };
 
 struct symbol_info {
-	core::value_type type_ = core::value_type::UNKNOWN;
+	core::value_type type_;
 	symbol_kind kind_;
-	bool initialized_ = false;
+	bool initialized_;
 	std::vector<core::value_type> param_types_;
 };
 

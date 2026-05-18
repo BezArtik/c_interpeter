@@ -1,6 +1,7 @@
 #include "parser/parser.hpp"
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 namespace parser {
 
@@ -59,24 +60,24 @@ const core::token& parser::prev() const noexcept {
 
 parser::stmt_ptr parser::declaration() {
     try {
-        if (match({ core::token_type::INT_KEYWORD, 
-                    core::token_type::DOUBLE_KEYWORD,
-                    core::token_type::BOOL_KEYWORD })) {
-            core::token type_token = prev();
-            core::value_type type;
-            switch (type_token.type_) {
-            case core::token_type::INT_KEYWORD:    type = core::value_type::INT; break;
-            case core::token_type::DOUBLE_KEYWORD: type = core::value_type::DOUBLE; break;
-            case core::token_type::BOOL_KEYWORD:   type = core::value_type::BOOL; break;
-            default: throw std::runtime_error("Unknown type");
-            }
+        for (auto tt : core::type_tokens) {
+            if (match({ tt })) {
+                auto type_opt = core::token_to_value_type(prev().type_);
+                if (!type_opt) throw std::runtime_error("Unknown type");
+                core::value_type type = *type_opt;
 
-            core::token name = consume(core::token_type::IDENTIFIER, "Expect name after type.");
+                core::token name = consume(core::token_type::IDENTIFIER, "Expect name after type.");
 
-            if (match({ core::token_type::LEFT_PAREN })) {
-                return func_declaration(type, name);
-            } else {
-                return var_declaration(type, name);
+                if (match({ core::token_type::LEFT_PAREN })) {
+                    return func_declaration(type, name);
+                } else {
+                    if (type == core::value_type::VOID) {
+                        reporter_.error(name.line_, name.column_,
+                            "cannot declare variable of type void");
+                        throw std::runtime_error("Parser error");
+                    }
+                    return var_declaration(type, name);
+                }
             }
         }
         return statement();
@@ -121,8 +122,7 @@ parser::stmt_ptr parser::func_declaration(core::value_type return_type, const co
     auto body = block_statement();
 
     auto& block = std::get<ast::block_stmt>(body->data_);
-    func->body_ = std::make_unique<ast::statement>();
-    func->body_->data_ = std::move(block);
+    func->body_ = std::make_unique<ast::block_stmt>(std::move(block));
 
     auto stmt = std::make_unique<ast::statement>();
     stmt->data_ = std::move(*func);
@@ -131,13 +131,20 @@ parser::stmt_ptr parser::func_declaration(core::value_type return_type, const co
 
 ast::func_param parser::parse_param() {
     core::value_type type;
-    if (match({ core::token_type::INT_KEYWORD })) {
-        type = core::value_type::INT;
-    } else if (match({ core::token_type::DOUBLE_KEYWORD })) {
-        type = core::value_type::DOUBLE;
-    } else if (match({ core::token_type::BOOL_KEYWORD })) {
-        type = core::value_type::BOOL;
-    } else {
+    bool found = false;
+
+    for (auto tt : core::type_tokens) {
+        if (match({ tt })) {
+            auto type_opt = core::token_to_value_type(prev().type_);
+            if (type_opt && *type_opt != core::value_type::VOID) {
+                type = *type_opt;
+                found = true;
+                break;
+            }
+        }
+    }
+
+    if (!found) {
         throw std::runtime_error("Expect parameter type.");
     }
 
@@ -387,18 +394,7 @@ void parser::synchronize() {
     while (!is_at_end()) {
         if (prev().type_ == core::token_type::SEMICOLON) return;
 
-        switch (peek().type_) {
-        case core::token_type::IF:
-        case core::token_type::ELSE:
-        case core::token_type::WHILE:
-        case core::token_type::RETURN:
-        case core::token_type::INT_KEYWORD:
-        case core::token_type::DOUBLE_KEYWORD:
-        case core::token_type::BOOL_KEYWORD:
-            return;
-        default:
-            break;
-        }
+        if (core::can_start_statement(peek().type_)) return;
 
         advance();
     }

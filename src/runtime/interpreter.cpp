@@ -23,9 +23,9 @@ interpreter::interpreter(core::error_reporter& reporter)
         });
 }
 
-void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements_) {
+void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements) {
     try {
-        for (const auto& stmt : statements_) {
+        for (const auto& stmt : statements) {
             execute(*stmt);
         }
     } catch (const std::runtime_error& e) {
@@ -129,8 +129,7 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr_) {
     switch (token.type_) {
     case core::token_type::NUMBER: {
         std::string_view lex = token.lexeme_;
-        bool is_double = (lex.find('.') != std::string_view::npos);
-        if (is_double) {
+        if (core::is_double_literal(lex)) {
             return value(std::stod(std::string(lex)));
         } else {
             return value(std::stoll(std::string(lex)));
@@ -140,8 +139,11 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr_) {
         return value(true);
     case core::token_type::FALSE:
         return value(false);
-    case core::token_type::STRING:
-        return value(std::string(token.lexeme_));
+    case core::token_type::STRING: {
+        std::string_view lex = token.lexeme_;
+        std::string s{ lex.substr(1, lex.size() - 2) };
+        return value(std::move(s));
+    }
     default:
         throw std::runtime_error("Unexpected literal");
     }
@@ -245,7 +247,9 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
 
     value result;
     try {
-        execute(*func.body_);
+        for (const auto& s : func.body_->statements_) {
+            execute(*s);
+        }
         switch (func.return_type_) {
         case core::value_type::INT:    result = value(0ll); break;
         case core::value_type::DOUBLE: result = value(0.0); break;

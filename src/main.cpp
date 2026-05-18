@@ -19,7 +19,7 @@
 #include <filesystem>
 
 
-int main(int argc, char* argv[]) {
+int main() {
     std::ifstream file("..\\..\\..\\..\\..\\samples\\test1.c");
     if (!file) {
         std::cerr << "Error: cannot open test1.c\n";
