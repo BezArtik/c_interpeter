@@ -1,0 +1,126 @@
+# cint -- C-like Interpreter
+
+Tree-walk interpreter for a C-like language, written in C++20.
+
+
+## Features
+
+- Data types: int, double, bool, string, void
+- Variables with lexical scoping
+- Control flow: if/else, while
+- Functions with parameters, return values, and type checking
+- Built-in print function for console output
+- Static type checking before execution
+- Strict mode: type errors and undefined variables are caught before runtime
+
+
+## Requirements
+
+- CMake 3.20+
+- C++20 compiler (GCC 11+, Clang 14+, MSVC 2022+)
+- Ninja (for GCC presets) or Visual Studio
+
+
+## Quick Start
+
+### Build
+```bash
+git clone https://github.com/yourname/cint.git
+cd cint
+cmake --preset gcc-release
+cmake --build --preset gcc-release
+```
+### Run
+```bash
+cint samples/fib.c
+```
+
+## Syntax
+
+### Variables
+```cpp
+int x = 42;
+double pi = 3.14;
+bool flag = true;
+string msg = "hello";
+```
+### Control Flow
+```cpp
+if (x > 0) {
+    print("positive");
+} else {
+    print("non-positive");
+}
+```
+```cpp
+while (x > 0) {
+    x = x - 1;
+}
+```
+### Functions
+```cpp
+int add(int a, int b) {
+    return a + b;
+}
+
+void greet(string name) {
+    print("Hello, ");
+    print(name);
+}
+
+int result = add(3, 4);
+greet("world");
+```
+
+### Built-in print
+```cpp
+print(42);
+print(3.14);
+print(true);
+print("text");
+```
+
+## Project Structure
+
+- `src/`
+    - `core/`          -- tokens, types, errors, utilities  
+    - `lexer/`         -- lexical analysis (source -> tokens)  
+    - `ast/`           -- abstract syntax tree  
+    - `parser/`        -- syntax analysis (tokens -> AST)  
+    - `semantics/`     -- semantic analysis (type checking)  
+    - `runtime/`       -- values, environment, execution  
+    - `main.cpp`       -- entry point  
+- `samples/`           -- example programs  
+
+
+## Examples
+
+`fib.c`           -- Fibonacci numbers  
+`prime.c`         -- Prime numbers (trial division)  
+`monte_carlo.c`   -- Monte Carlo pi calculation  
+`leibniz.c`       -- Leibniz series for pi  
+`print_test.c`    -- Type and print demo  
+
+
+## Architecture
+
+Pipeline: source -> Lexer -> tokens -> Parser -> AST -> TypeChecker -> checked AST -> Interpreter -> output
+
+- Lexer -- finite automaton, splits characters into tokens
+- Parser -- recursive descent (LL), builds AST
+- TypeChecker -- walks AST, checks types and scopes
+- Interpreter -- tree-walk AST execution
+
+
+## Limitations
+
+- No implicit type conversion between int and double
+- No arrays, pointers, or structs
+- No for loops, &&, || operators
+- Strings without escape sequences
+- Recursive functions may overflow (no depth limit)
+
+
+## License
+
+MIT

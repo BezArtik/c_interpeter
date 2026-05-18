@@ -2,6 +2,7 @@
 #include "ast/expression.hpp"
 #include "ast/statement.hpp"
 #include "core/overloaded.hpp"
+#include "semantics/type_check.hpp"
 #include <stdexcept>
 #include <string>
 #include <iostream>
@@ -52,9 +53,9 @@ void interpreter::execute_expression_stmt(const ast::expression_stmt& stmt) {
 void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
     std::string name_{ stmt.name_.lexeme_ };
 
-    value init_val = [&]() {
+    auto init_val = [&]() {
         switch (stmt.type_) {
-        case core::value_type::INT:    return value(0ll);
+        case core::value_type::INT:    return value(0);
         case core::value_type::DOUBLE: return value(0.0);
         case core::value_type::BOOL:   return value(false);
         case core::value_type::STRING: return value(std::string(""));
@@ -64,11 +65,17 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
         }();
 
     if (stmt.initializer_ != nullptr) {
-        value init = evaluate(*stmt.initializer_);
-        if (init.type() != stmt.type_) {
+        auto init = evaluate(*stmt.initializer_);
+        auto init_type = init.type();
+        auto target_type = stmt.type_;
+
+        if (init_type == core::value_type::INT && target_type == core::value_type::DOUBLE) {
+            init_val = value(static_cast<double>(init.as_int().value()));
+        } else if (init_type != target_type) {
             throw std::runtime_error("Type mismatch in variable initialisation of '" + name_ + "'");
+        } else {
+            init_val = std::move(init);
         }
-        init_val = std::move(init);
     }
 
     current_env_->define(name_, std::move(init_val));
@@ -114,25 +121,25 @@ void interpreter::execute_func_declaration(const ast::func_declaration& stmt) {
     functions_[name] = &stmt;
 }
 
-value interpreter::evaluate(const ast::expression& expr_) {
+value interpreter::evaluate(const ast::expression& expr) {
     return std::visit(core::overloaded{
         [this](const ast::literal_expr& e) { return evaluate_literal(e); },
         [this](const ast::variable_expr& e) { return evaluate_variable(e); },
         [this](const ast::binary_expr& e) { return evaluate_binary(e); },
         [this](const ast::unary_expr& e) { return evaluate_unary(e); },
         [this](const ast::call_expr& e) { return evaluate_call(e); },
-        }, expr_.data_);
+        }, expr.data_);
 }
 
-value interpreter::evaluate_literal(const ast::literal_expr& expr_) {
-    const auto& token = expr_.value_;
+value interpreter::evaluate_literal(const ast::literal_expr& expr) {
+    const auto& token = expr.value_;
     switch (token.type_) {
     case core::token_type::NUMBER: {
         std::string_view lex = token.lexeme_;
         if (core::is_double_literal(lex)) {
             return value(std::stod(std::string(lex)));
         } else {
-            return value(std::stoll(std::string(lex)));
+            return value(static_cast<int64_t>(std::stoll(std::string(lex))));
         }
     }
     case core::token_type::TRUE:
@@ -149,8 +156,8 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr_) {
     }
 }
 
-value interpreter::evaluate_variable(const ast::variable_expr& expr_) {
-    std::string name_{ expr_.name_.lexeme_ };
+value interpreter::evaluate_variable(const ast::variable_expr& expr) {
+    std::string name_{ expr.name_.lexeme_ };
     auto val = current_env_->get(name_);
     if (!val) {
         throw std::runtime_error("Undefined variable '" + name_ + "'");
@@ -158,22 +165,22 @@ value interpreter::evaluate_variable(const ast::variable_expr& expr_) {
     return *val;
 }
 
-value interpreter::evaluate_binary(const ast::binary_expr& expr_) {
-    if (expr_.op_.type_ == core::token_type::EQUAL) {
-        const auto* var = std::get_if<ast::variable_expr>(&expr_.left_->data_);
+value interpreter::evaluate_binary(const ast::binary_expr& expr) {
+    if (expr.op_.type_ == core::token_type::EQUAL) {
+        const auto* var = std::get_if<ast::variable_expr>(&expr.left_->data_);
         if (!var) {
             throw std::runtime_error("Invalid assignment target");
         }
 
         std::string name{ var->name_.lexeme_ };
-        value right = evaluate(*expr_.right_);
+        auto right = evaluate(*expr.right_);
         current_env_->assign(name, right);
         return right;
     }
-    value left = evaluate(*expr_.left_);
-    value right = evaluate(*expr_.right_);
+    auto left = evaluate(*expr.left_);
+    auto right = evaluate(*expr.right_);
 
-    switch (expr_.op_.type_) {
+    switch (expr.op_.type_) {
     case core::token_type::PLUS:         return left.add(right);
     case core::token_type::MINUS:        return left.sub(right);
     case core::token_type::STAR:         return left.mul(right);
@@ -192,10 +199,10 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr_) {
     }
 }
 
-value interpreter::evaluate_unary(const ast::unary_expr& expr_) {
-    value operand = evaluate(*expr_.operand_);
+value interpreter::evaluate_unary(const ast::unary_expr& expr) {
+    value operand = evaluate(*expr.operand_);
 
-    switch (expr_.op_.type_) {
+    switch (expr.op_.type_) {
     case core::token_type::MINUS: {
         if (operand.type() == core::value_type::INT) {
             return value(-operand.as_int().value());
@@ -251,7 +258,7 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
             execute(*s);
         }
         switch (func.return_type_) {
-        case core::value_type::INT:    result = value(0ll); break;
+        case core::value_type::INT:    result = value(0); break;
         case core::value_type::DOUBLE: result = value(0.0); break;
         case core::value_type::BOOL:   result = value(false); break;
         case core::value_type::STRING: result = value(std::string("")); break;

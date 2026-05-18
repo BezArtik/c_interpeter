@@ -5,6 +5,7 @@ namespace runtime {
 
 value::value() : data_(std::monostate{}) {}
 
+value::value(int v) : data_(static_cast<int64_t>(v)) {}
 value::value(int64_t v) : data_(v) {}
 value::value(double v) : data_(v) {}
 value::value(bool v) : data_(v) {}
@@ -56,12 +57,6 @@ std::optional<bool> value::as_bool() const {
 std::optional<std::string> value::as_string() const {
     if (auto* p = std::get_if<std::string>(&data_)) return *p;
     return std::nullopt;
-}
-
-static double to_number(const value& v) {
-    if (auto i = v.as_int()) return static_cast<double>(*i);
-    if (auto d = v.as_double()) return *d;
-    throw std::runtime_error("Operand is not a number");
 }
 
 value value::add(const value& other) const {

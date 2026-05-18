@@ -1,10 +1,11 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 namespace core {
 
-enum class value_type {
+enum class value_type : uint8_t {
     INT,
     DOUBLE,
     BOOL,

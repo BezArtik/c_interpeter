@@ -27,6 +27,7 @@ private:
     void add_builtin(const std::string& name, core::value_type return_type,
         const std::vector<core::value_type>& param_types);
 
+    static bool is_assignable(core::value_type target, core::value_type source) noexcept;
     void check_statement(const ast::statement& stmt);
     void check_expression_stmt(const ast::expression_stmt& stmt);
     void check_var_declaration(const ast::var_declaration& stmt);

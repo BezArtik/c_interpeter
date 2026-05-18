@@ -13,6 +13,7 @@ public:
 
     value();
 
+    value(int v);
     value(int64_t v);
     value(double v);
     value(bool v);

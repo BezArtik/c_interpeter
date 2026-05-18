@@ -30,6 +30,12 @@ void type_checker::add_builtin(const std::string& name, core::value_type return_
     builtins_[name].push_back(param_types);
 }
 
+bool type_checker::is_assignable(core::value_type target, core::value_type source) noexcept {
+    if (target == source) return true;
+    if (target == core::value_type::DOUBLE && source == core::value_type::INT) return true;
+    return false;
+}
+
 void type_checker::check_statement(const ast::statement& stmt) {
     std::visit(core::overloaded{
         [this](const ast::expression_stmt& s) { check_expression_stmt(s); },
@@ -60,7 +66,7 @@ void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
         if (init_type == core::value_type::UNKNOWN) {
             return;
         }
-        if (init_type != stmt.type_) {
+        if (!is_assignable(stmt.type_, init_type)) {
             reporter_.error(stmt.name_.line_, stmt.name_.column_,
                 "type mismatch in initialisation of '" + name_ + "'");
             return;
@@ -214,7 +220,7 @@ core::value_type type_checker::type_of_binary(const ast::binary_expr& expr) {
     core::token_type op = expr.op_.type_;
 
     if (op == core::token_type::EQUAL) {
-        if (left != right) {
+        if (!is_assignable(left, right)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 "type mismatch in assignment");
             return core::value_type::UNKNOWN;

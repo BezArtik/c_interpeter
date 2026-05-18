@@ -19,10 +19,15 @@
 #include <filesystem>
 
 
-int main() {
-    std::ifstream file("..\\..\\..\\..\\..\\samples\\test1.c");
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <source_file>\n";
+        return 1;
+    }
+
+    std::ifstream file(argv[1]);
     if (!file) {
-        std::cerr << "Error: cannot open test1.c\n";
+        std::cerr << "Error: cannot open file '" << argv[1] << "'\n";
         return 1;
     }
 

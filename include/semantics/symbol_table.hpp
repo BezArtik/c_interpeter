@@ -6,11 +6,12 @@
 #include <unordered_map>
 #include <memory>
 #include <optional>
+#include <cstdint>
 
 
 namespace semantics {
 
-enum class symbol_kind {
+enum class symbol_kind : uint8_t {
 	VARIABLE,
 	FUNCTION
 };

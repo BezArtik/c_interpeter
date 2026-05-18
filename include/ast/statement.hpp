@@ -35,7 +35,7 @@ struct if_stmt {
 
 struct return_stmt {
     core::token keyword_;
-    std::unique_ptr<struct expression> value_;
+    std::unique_ptr<expression> value_;
 };
 
 struct func_param {

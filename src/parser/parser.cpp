@@ -30,15 +30,15 @@ bool parser::match(std::initializer_list<core::token_type> types) noexcept {
     return false;
 }
 
-const core::token& parser::consume(core::token_type type_, std::string_view msg) {
-    if (check(type_)) return advance();
+const core::token& parser::consume(core::token_type type, std::string_view msg) {
+    if (check(type)) return advance();
     reporter_.error(peek().line_, peek().column_, msg);
     throw std::runtime_error("Parser error");
 }
 
-bool parser::check(core::token_type type_) const noexcept {
+bool parser::check(core::token_type type) const noexcept {
     if (is_at_end()) return false;
-    return peek().type_ == type_;
+    return peek().type_ == type;
 }
 
 const core::token& parser::advance() noexcept {

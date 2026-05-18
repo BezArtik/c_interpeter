@@ -136,9 +136,9 @@ bool lexer::is_at_end() const noexcept {
     return current_ >= source_.length();
 }
 
-void lexer::add_token(core::token_type type_) {
+void lexer::add_token(core::token_type type) {
     std::string_view text = source_.substr(start_, current_ - start_);
-    tokens_.push_back({ type_, text, line_, column_ });
+    tokens_.push_back({ type, text, line_, column_ });
 }
 
 
