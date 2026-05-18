@@ -16,9 +16,19 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <filesystem>
 
-int main() {
-    std::string source = "int x = 10;\ndouble y = 3.14;\nint z = x + 5;\n";
+
+int main(int argc, char* argv[]) {
+    std::ifstream file("..\\..\\..\\..\\..\\samples\\test1.c");
+    if (!file) {
+        std::cerr << "Error: cannot open test1.c\n";
+        return 1;
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    std::string source = buffer.str();
 
     core::error_reporter reporter;
     lexer::lexer lex(source, reporter);

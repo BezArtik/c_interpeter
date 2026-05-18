@@ -11,5 +11,7 @@ statement::statement(var_declaration s) : data_(std::move(s)) {}
 statement::statement(block_stmt s) : data_(std::move(s)) {}
 statement::statement(while_stmt s) : data_(std::move(s)) {}
 statement::statement(if_stmt s) : data_(std::move(s)) {}
+statement::statement(return_stmt s) : data_(std::move(s)) {}
+statement::statement(func_declaration s) : data_(std::move(s)) {}
 
 }

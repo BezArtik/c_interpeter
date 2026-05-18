@@ -45,6 +45,7 @@ void lexer::scan_token() {
     case '+': add_token(core::token_type::PLUS); break;
     case ';': add_token(core::token_type::SEMICOLON); break;
     case '*': add_token(core::token_type::STAR); break;
+    case '%': add_token(core::token_type::PERCENT); break;
 
     case '!': add_token(match('=') ? core::token_type::BANG_EQUAL : core::token_type::BANG); break;
     case '=': add_token(match('=') ? core::token_type::EQUAL_EQUAL : core::token_type::EQUAL); break;
@@ -121,29 +122,29 @@ void lexer::consume_string() {
     add_token(core::token_type::STRING);
 }
 
-char lexer::advance() {
+char lexer::advance() noexcept {
     column_++;
     return source_[current_++];
 }
 
-char lexer::peek() const {
+char lexer::peek() const noexcept {
     if (is_at_end()) return '\0';
     return source_[current_];
 }
 
-char lexer::peek_next() const {
+char lexer::peek_next() const noexcept {
     if (current_ + 1 >= source_.length()) return '\0';
     return source_[current_ + 1];
 }
 
-bool lexer::match(char expected) {
+bool lexer::match(char expected) noexcept {
     if (is_at_end() || source_[current_] != expected) return false;
     current_++;
     column_++;
     return true;
 }
 
-bool lexer::is_at_end() const {
+bool lexer::is_at_end() const noexcept {
     return current_ >= source_.length();
 }
 

@@ -19,6 +19,8 @@ enum class token_type : uint8_t {
     INT_KEYWORD, DOUBLE_KEYWORD, BOOL_KEYWORD,
     TRUE, FALSE,
 
+    FUNC_KEYWORD,
+
     END_OF_FILE
 };
 

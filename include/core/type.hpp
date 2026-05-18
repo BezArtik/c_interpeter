@@ -13,6 +13,6 @@ enum class value_type {
     UNKNOWN
 };
 
-std::string type_to_string(value_type type);
+std::string type_to_string(value_type type) noexcept;
 
 } 

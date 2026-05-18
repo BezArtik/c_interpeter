@@ -33,13 +33,32 @@ struct if_stmt {
     std::unique_ptr<struct statement> else_branch_;
 };
 
+struct return_stmt {
+    core::token keyword_;
+    std::unique_ptr<struct expression> value_;
+};
+
+struct func_param {
+    core::value_type type_;
+    core::token name_;
+};
+
+struct func_declaration {
+    core::value_type return_type_;
+    core::token name_;
+    std::vector<func_param> params_;
+    std::unique_ptr<statement> body_;
+};
+
 struct statement {
     std::variant<
         expression_stmt,
         var_declaration,
         block_stmt,
         while_stmt,
-        if_stmt
+        if_stmt,
+        return_stmt,
+        func_declaration
     > data_;
 
     statement();
@@ -48,6 +67,8 @@ struct statement {
     statement(block_stmt s);
     statement(while_stmt s);
     statement(if_stmt s);
+    statement(return_stmt s);
+    statement(func_declaration s);
 };
 
 }

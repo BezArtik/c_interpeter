@@ -4,6 +4,7 @@
 #include "core/overloaded.hpp"
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 namespace runtime {
 
@@ -11,6 +12,15 @@ interpreter::interpreter(core::error_reporter& reporter)
     : reporter_(reporter)
     , global_env_(std::make_unique<environment>())
     , current_env_(global_env_.get()) {
+
+    global_env_->define_builtin("print", [](const std::vector<value>& args) {
+        for (size_t i = 0; i < args.size(); i++) {
+            if (i > 0) std::cout << " ";
+            std::cout << args[i].to_string();
+        }
+        std::cout << std::endl;
+        return value();
+        });
 }
 
 void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements_) {
@@ -30,6 +40,8 @@ void interpreter::execute(const ast::statement& stmt) {
         [this](const ast::block_stmt& s) { execute_block(s); },
         [this](const ast::while_stmt& s) { execute_while(s); },
         [this](const ast::if_stmt& s) { execute_if(s); },
+        [this](const ast::return_stmt& s) { execute_return_stmt(s); },
+        [this](const ast::func_declaration& s) { execute_func_declaration(s); },
         }, stmt.data_);
 }
 
@@ -42,7 +54,7 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
 
     value init_val = [&]() {
         switch (stmt.type_) {
-        case core::value_type::INT:    return value(0);
+        case core::value_type::INT:    return value(0ll);
         case core::value_type::DOUBLE: return value(0.0);
         case core::value_type::BOOL:   return value(false);
         case core::value_type::STRING: return value(std::string(""));
@@ -82,10 +94,24 @@ void interpreter::execute_if(const ast::if_stmt& stmt) {
     value cond = evaluate(*stmt.condition_);
     if (cond.as_bool().value_or(false)) {
         execute(*stmt.then_branch_);
-    }
-    else if (stmt.else_branch_ != nullptr) {
+    } else if (stmt.else_branch_ != nullptr) {
         execute(*stmt.else_branch_);
     }
+}
+
+void interpreter::execute_return_stmt(const ast::return_stmt& stmt) {
+    value ret_val;
+    if (stmt.value_ != nullptr) {
+        ret_val = evaluate(*stmt.value_);
+    } else {
+        ret_val = value();
+    }
+    throw return_exception{ std::move(ret_val) };
+}
+
+void interpreter::execute_func_declaration(const ast::func_declaration& stmt) {
+    std::string name{ stmt.name_.lexeme_ };
+    functions_[name] = &stmt;
 }
 
 value interpreter::evaluate(const ast::expression& expr_) {
@@ -94,6 +120,7 @@ value interpreter::evaluate(const ast::expression& expr_) {
         [this](const ast::variable_expr& e) { return evaluate_variable(e); },
         [this](const ast::binary_expr& e) { return evaluate_binary(e); },
         [this](const ast::unary_expr& e) { return evaluate_unary(e); },
+        [this](const ast::call_expr& e) { return evaluate_call(e); },
         }, expr_.data_);
 }
 
@@ -102,13 +129,11 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr_) {
     switch (token.type_) {
     case core::token_type::NUMBER: {
         std::string_view lex = token.lexeme_;
-        bool is_double = (lex.find('.') != std::string_view::npos ||
-            lex.find('e') != std::string_view::npos ||
-            lex.find('E') != std::string_view::npos);
+        bool is_double = (lex.find('.') != std::string_view::npos);
         if (is_double) {
             return value(std::stod(std::string(lex)));
         } else {
-            return value(std::stoi(std::string(lex)));
+            return value(std::stoll(std::string(lex)));
         }
     }
     case core::token_type::TRUE:
@@ -132,6 +157,17 @@ value interpreter::evaluate_variable(const ast::variable_expr& expr_) {
 }
 
 value interpreter::evaluate_binary(const ast::binary_expr& expr_) {
+    if (expr_.op_.type_ == core::token_type::EQUAL) {
+        const auto* var = std::get_if<ast::variable_expr>(&expr_.left_->data_);
+        if (!var) {
+            throw std::runtime_error("Invalid assignment target");
+        }
+
+        std::string name{ var->name_.lexeme_ };
+        value right = evaluate(*expr_.right_);
+        current_env_->assign(name, right);
+        return right;
+    }
     value left = evaluate(*expr_.left_);
     value right = evaluate(*expr_.right_);
 
@@ -172,6 +208,59 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr_) {
     default:
         throw std::runtime_error("Unsupported unary operator");
     }
+}
+
+value interpreter::evaluate_call(const ast::call_expr& expr) {
+    std::string name{ expr.callee_.lexeme_ };
+
+    auto builtin = current_env_->get_builtin(name);
+    if (builtin) {
+        std::vector<value> args;
+        for (const auto& arg : expr.args_) {
+            args.push_back(evaluate(*arg));
+        }
+        return (*builtin)(args);
+    }
+
+    auto func_it = functions_.find(name);
+    if (func_it == functions_.end()) {
+        throw std::runtime_error("Undefined function '" + name + "'");
+    }
+
+    const ast::func_declaration& func = *func_it->second;
+
+    std::vector<value> args;
+    for (const auto& arg : expr.args_) {
+        args.push_back(evaluate(*arg));
+    }
+
+    current_env_->push_scope();
+
+    for (size_t i = 0; i < func.params_.size(); i++) {
+        std::string param_name{ func.params_[i].name_.lexeme_ };
+        current_env_->define(param_name, std::move(args[i]));
+    }
+
+    auto* prev_env = current_env_;
+
+    value result;
+    try {
+        execute(*func.body_);
+        switch (func.return_type_) {
+        case core::value_type::INT:    result = value(0ll); break;
+        case core::value_type::DOUBLE: result = value(0.0); break;
+        case core::value_type::BOOL:   result = value(false); break;
+        case core::value_type::STRING: result = value(std::string("")); break;
+        default: result = value();
+        }
+    } catch (return_exception& ret) {
+        result = std::move(ret.return_value_);
+    }
+
+    current_env_ = prev_env;
+    current_env_->pop_scope();
+
+    return result;
 }
 
 }

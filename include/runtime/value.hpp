@@ -3,6 +3,7 @@
 #include <string>
 #include <variant>
 #include <optional>
+#include <cstdint>
 #include "core/type.hpp"
 
 namespace runtime {
@@ -12,14 +13,17 @@ public:
 
     value();
 
-    value(int v);
+    value(int64_t v);
     value(double v);
     value(bool v);
     value(std::string v);
 
     core::value_type type() const;
 
-    std::optional<int> as_int() const;
+    double to_double() const;
+    std::string to_string() const;
+
+    std::optional<int64_t> as_int() const;
     std::optional<double> as_double() const;
     std::optional<bool> as_bool() const;
     std::optional<std::string> as_string() const;
@@ -42,7 +46,7 @@ public:
     value not_op() const;
 
 private:
-    std::variant<int, double, bool, std::string, std::monostate> data_;
+    std::variant<int64_t, double, bool, std::string, std::monostate> data_;
 };
 
 } // namespace runtime

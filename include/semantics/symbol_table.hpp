@@ -10,9 +10,21 @@
 
 namespace semantics {
 
+enum class symbol_kind {
+	VARIABLE,
+	FUNCTION
+};
+
+struct func_info {
+	core::value_type return_type_;
+	std::vector<core::value_type> param_types_;
+};
+
 struct symbol_info {
 	core::value_type type_ = core::value_type::UNKNOWN;
-	bool initialized = false;
+	symbol_kind kind_;
+	bool initialized_ = false;
+	std::vector<core::value_type> param_types_;
 };
 
 class symbol_table {
@@ -24,6 +36,8 @@ public:
 	void pop_scope();
 
 	void define(const std::string& name, core::value_type type);
+	void define_function(const std::string& name, core::value_type return_type,
+		const std::vector<core::value_type>& param_types);
 
 	std::optional<symbol_info> lookup(const std::string& name) const;
 	

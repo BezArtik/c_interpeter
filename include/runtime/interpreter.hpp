@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <unordered_map>
 #include "runtime/environment.hpp"
 #include "runtime/value.hpp"
 #include "ast/statement.hpp"
@@ -9,6 +10,10 @@
 #include "core/error_report.hpp"
 
 namespace runtime {
+
+struct return_exception {
+    value return_value_;
+};
 
 class interpreter {
 public:
@@ -20,6 +25,7 @@ private:
     core::error_reporter& reporter_;
     std::unique_ptr<environment> global_env_;
     environment* current_env_;
+    std::unordered_map<std::string, const ast::func_declaration*> functions_;
 
     void execute(const ast::statement& stmt);
     void execute_expression_stmt(const ast::expression_stmt& stmt);
@@ -27,12 +33,15 @@ private:
     void execute_block(const ast::block_stmt& stmt);
     void execute_while(const ast::while_stmt& stmt);
     void execute_if(const ast::if_stmt& stmt);
+    void execute_return_stmt(const ast::return_stmt& stmt);
+    void execute_func_declaration(const ast::func_declaration& stmt);
 
     value evaluate(const ast::expression& expr);
     value evaluate_literal(const ast::literal_expr& expr);
     value evaluate_variable(const ast::variable_expr& expr);
     value evaluate_binary(const ast::binary_expr& expr);
     value evaluate_unary(const ast::unary_expr& expr);
+    value evaluate_call(const ast::call_expr& expr);
 };
 
 }

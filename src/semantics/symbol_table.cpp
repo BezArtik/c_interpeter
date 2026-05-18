@@ -18,7 +18,22 @@ void symbol_table::pop_scope() {
 
 void symbol_table::define(const std::string& name_, core::value_type type_) {
     auto& current = *scopes_.back();
-    current.symbols_[name_] = symbol_info{ type_, false };
+    symbol_info info;
+    info.kind_ = symbol_kind::VARIABLE;
+    info.type_ = type_;
+    info.initialized_ = false;
+    current.symbols_[name_] = info;
+}
+
+void symbol_table::define_function(const std::string& name, core::value_type return_type,
+    const std::vector<core::value_type>& param_types) {
+    auto& current = *scopes_.back();
+    symbol_info info;
+    info.kind_ = symbol_kind::FUNCTION;
+    info.type_ = return_type;
+    info.param_types_ = param_types;
+    info.initialized_ = true;
+    current.symbols_[name] = info;
 }
 
 std::optional<symbol_info> symbol_table::lookup(const std::string& name_) const {
@@ -42,7 +57,7 @@ void symbol_table::mark_initialized(const std::string& name_) {
         auto& symbols = (*it)->symbols_;
         auto found = symbols.find(name_);
         if (found != symbols.end()) {
-            found->second.initialized = true;
+            found->second.initialized_ = true;
             return;
         }
     }

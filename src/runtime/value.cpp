@@ -5,7 +5,7 @@ namespace runtime {
 
 value::value() : data_(std::monostate{}) {}
 
-value::value(int v) : data_(v) {}
+value::value(int64_t v) : data_(v) {}
 value::value(double v) : data_(v) {}
 value::value(bool v) : data_(v) {}
 value::value(std::string v) : data_(std::move(v)) {}
@@ -13,7 +13,7 @@ value::value(std::string v) : data_(std::move(v)) {}
 core::value_type value::type() const {
     return std::visit([](auto&& arg) {
         using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int>) return core::value_type::INT;
+        if constexpr (std::is_same_v<T, int64_t>) return core::value_type::INT;
         else if constexpr (std::is_same_v<T, double>) return core::value_type::DOUBLE;
         else if constexpr (std::is_same_v<T, bool>) return core::value_type::BOOL;
         else if constexpr (std::is_same_v<T, std::string>) return core::value_type::STRING;
@@ -21,8 +21,25 @@ core::value_type value::type() const {
         }, data_);
 }
 
-std::optional<int> value::as_int() const {
-    if (auto* p = std::get_if<int>(&data_)) return *p;
+double value::to_double() const {
+    if (auto i = as_int()) return static_cast<double>(*i);
+    if (auto d = as_double()) return *d;
+    throw std::runtime_error("Cannot convert to double");
+}
+
+std::string value::to_string() const {
+    return std::visit([](auto&& arg) -> std::string {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int64_t>) return std::to_string(arg);
+        else if constexpr (std::is_same_v<T, double>) return std::to_string(arg);
+        else if constexpr (std::is_same_v<T, bool>) return arg ? "true" : "false";
+        else if constexpr (std::is_same_v<T, std::string>) return arg;
+        else return "void";
+        }, data_);
+}
+
+std::optional<int64_t> value::as_int() const {
+    if (auto* p = std::get_if<int64_t>(&data_)) return *p;
     return std::nullopt;
 }
 
@@ -48,51 +65,49 @@ static double to_number(const value& v) {
 }
 
 value value::add(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in addition");
-    if (auto i = as_int()) return value(*i + *other.as_int());
-    if (auto d = as_double()) return value(*d + *other.as_double());
-    if (auto s = as_string()) return value(*s + *other.as_string());
-    throw std::runtime_error("Addition not supported for these types");
+    if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
+        return value(*as_int() + *other.as_int());
+    }
+    if (type() == core::value_type::STRING && other.type() == core::value_type::STRING) {
+        return value(*as_string() + *other.as_string());
+    }
+    return value(to_double() + other.to_double());
 }
 
 value value::sub(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in subtraction");
-    if (auto i = as_int()) return value(*i - *other.as_int());
-    if (auto d = as_double()) return value(*d - *other.as_double());
-    throw std::runtime_error("Subtraction not supported for these types");
+    if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
+        return value(*as_int() - *other.as_int());
+    }
+    return value(to_double() - other.to_double());
 }
 
 value value::mul(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in multiplication");
-    if (auto i = as_int()) return value(*i * *other.as_int());
-    if (auto d = as_double()) return value(*d * *other.as_double());
-    throw std::runtime_error("Multiplication not supported for these types");
+    if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
+        return value(*as_int() * *other.as_int());
+    }
+    return value(to_double() * other.to_double());
 }
 
 value value::div(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in division");
-    if (auto i = as_int()) {
-        if (*other.as_int() == 0) throw std::runtime_error("Division by zero");
-        return value(*i / *other.as_int());
-    }
-    if (auto d = as_double()) {
-        if (*other.as_double() == 0.0) throw std::runtime_error("Division by zero");
-        return value(*d / *other.as_double());
-    }
-    throw std::runtime_error("Division not supported for these types");
+    return value(to_double() / other.to_double());
 }
 
 value value::mod(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in modulo");
-    if (auto i = as_int()) {
+    if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
         if (*other.as_int() == 0) throw std::runtime_error("Modulo by zero");
-        return value(*i % *other.as_int());
+        return value(*as_int() % *other.as_int());
     }
     throw std::runtime_error("Modulo supported only for integers");
 }
 
 value value::eq(const value& other) const {
-    if (type() != other.type()) return value(false);
+    if (type() != other.type()) {
+        if ((type() == core::value_type::INT || type() == core::value_type::DOUBLE) &&
+            (other.type() == core::value_type::INT || other.type() == core::value_type::DOUBLE)) {
+            return value(to_double() == other.to_double());
+        }
+        return value(false);
+    }
     if (auto i = as_int()) return value(*i == *other.as_int());
     if (auto d = as_double()) return value(*d == *other.as_double());
     if (auto b = as_bool()) return value(*b == *other.as_bool());

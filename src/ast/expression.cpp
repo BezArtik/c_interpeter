@@ -9,5 +9,6 @@ expression::expression(literal_expr e) : data_(std::move(e)) {}
 expression::expression(variable_expr e) : data_(std::move(e)) {}
 expression::expression(binary_expr e) : data_(std::move(e)) {}
 expression::expression(unary_expr e) : data_(std::move(e)) {}
+expression::expression(call_expr e) : data_(std::move(e)) {}
 
 }

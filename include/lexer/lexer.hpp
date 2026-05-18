@@ -16,11 +16,11 @@ public:
 
 private:
 
-	bool is_at_end() const;
-	char advance();
-	char peek() const;
-    char peek_next() const;
-	bool match(char expected);
+	bool is_at_end() const noexcept;
+	char advance() noexcept;
+	char peek() const noexcept;
+    char peek_next() const noexcept;
+	bool match(char expected) noexcept;
 
 	void scan_token();
     void add_token(core::token_type type);

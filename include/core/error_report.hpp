@@ -9,8 +9,8 @@ public:
 
 	void error(size_t line, size_t column, std::string_view msg);
 
-	bool has_error() const;
-	void clear_errors();
+	bool has_error() const noexcept;
+	void clear_errors() noexcept;
 
 private:
 

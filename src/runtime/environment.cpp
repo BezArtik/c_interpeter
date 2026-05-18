@@ -48,4 +48,16 @@ bool environment::contains(const std::string& name_) const {
     return get(name_).has_value();
 }
 
+void environment::define_builtin(const std::string& name, builtin_fn fn) {
+    builtins_[name] = std::move(fn);
+}
+
+std::optional<environment::builtin_fn> environment::get_builtin(const std::string& name) const {
+    auto found = builtins_.find(name);
+    if (found != builtins_.end()) {
+        return found->second;
+    }
+    return std::nullopt;
+}
+
 }

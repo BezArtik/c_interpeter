@@ -3,6 +3,7 @@
 #include "core/token.hpp"
 #include <variant>
 #include <memory>
+#include <vector>
 
 namespace ast {
 
@@ -25,12 +26,18 @@ struct unary_expr {
     std::unique_ptr<struct expression> operand_;
 };
 
+struct call_expr {
+    core::token callee_;
+    std::vector<std::unique_ptr<struct expression>> args_;
+};
+
 struct expression {
     std::variant<
         literal_expr,
         variable_expr,
         binary_expr,
-        unary_expr
+        unary_expr,
+        call_expr
     > data_;
 
     expression();
@@ -38,6 +45,7 @@ struct expression {
     expression(variable_expr e);
     expression(binary_expr e);
     expression(unary_expr e);
+    expression(call_expr e);
 };
 
 }

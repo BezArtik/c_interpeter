@@ -9,11 +9,11 @@ void error_reporter::error(size_t line, size_t column, std::string_view msg) {
 	report(line, column, "", msg);
 }
 
-bool error_reporter::has_error() const {
+bool error_reporter::has_error() const noexcept {
     return had_error_;
 }
 
-void error_reporter::clear_errors() {
+void error_reporter::clear_errors() noexcept {
     had_error_ = false;
 }
 
