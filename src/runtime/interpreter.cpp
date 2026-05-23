@@ -40,6 +40,7 @@ void interpreter::execute(const ast::statement& stmt) {
         [this](const ast::var_declaration& s) { execute_var_declaration(s); },
         [this](const ast::block_stmt& s) { execute_block(s); },
         [this](const ast::while_stmt& s) { execute_while(s); },
+		[this](const ast::for_stmt& s) { execute_for(s); },
         [this](const ast::if_stmt& s) { execute_if(s); },
         [this](const ast::return_stmt& s) { execute_return_stmt(s); },
         [this](const ast::func_declaration& s) { execute_func_declaration(s); },
@@ -97,18 +98,36 @@ void interpreter::execute_while(const ast::while_stmt& stmt) {
     }
 }
 
+void interpreter::execute_for(const ast::for_stmt& stmt) {
+	current_env_->push_scope();
+	if (stmt.initializer_) {
+		execute(*stmt.initializer_);
+	}
+	while (true) {
+		if (stmt.condition_) {
+			auto cond = evaluate(*stmt.condition_);
+			if (!cond.as_bool().value_or(false)) break;
+		}
+		execute(*stmt.body_);
+		if (stmt.increment_) {
+			evaluate(*stmt.increment_);
+		}
+	}
+	current_env_->pop_scope();
+}
+
 void interpreter::execute_if(const ast::if_stmt& stmt) {
-    value cond = evaluate(*stmt.condition_);
+    auto cond = evaluate(*stmt.condition_);
     if (cond.as_bool().value_or(false)) {
         execute(*stmt.then_branch_);
-    } else if (stmt.else_branch_ != nullptr) {
+    } else if (stmt.else_branch_) {
         execute(*stmt.else_branch_);
     }
 }
 
 void interpreter::execute_return_stmt(const ast::return_stmt& stmt) {
     value ret_val;
-    if (stmt.value_ != nullptr) {
+    if (stmt.value_) {
         ret_val = evaluate(*stmt.value_);
     } else {
         ret_val = value();
@@ -127,6 +146,7 @@ value interpreter::evaluate(const ast::expression& expr) {
         [this](const ast::variable_expr& e) { return evaluate_variable(e); },
         [this](const ast::binary_expr& e) { return evaluate_binary(e); },
         [this](const ast::unary_expr& e) { return evaluate_unary(e); },
+		[this](const ast::postfix_expr& e) { return evaluate_postfix(e); },
         [this](const ast::call_expr& e) { return evaluate_call(e); },
         }, expr.data_);
 }
@@ -177,6 +197,25 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
         current_env_->assign(name, right);
         return right;
     }
+
+    if (expr.op_.type_ == core::token_type::AND) {
+        auto left = evaluate(*expr.left_);
+        if (!left.as_bool().value_or(false)) {
+            return value(false);
+        }
+        auto right = evaluate(*expr.right_);
+        return value(right.as_bool().value_or(false));
+    }
+
+    if (expr.op_.type_ == core::token_type::OR) {
+        auto left = evaluate(*expr.left_);
+        if (left.as_bool().value_or(false)) {
+            return value(true);
+        }
+        auto right = evaluate(*expr.right_);
+        return value(right.as_bool().value_or(false));
+    }
+
     auto left = evaluate(*expr.left_);
     auto right = evaluate(*expr.right_);
 
@@ -214,9 +253,41 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr) {
     case core::token_type::BANG: {
         return operand.not_op();
     }
+    case core::token_type::INCREMENT:
+    case core::token_type::DECREMENT: {
+        const auto& var = std::get<ast::variable_expr>(expr.operand_->data_);
+        std::string name{ var.name_.lexeme_ };
+        auto old_val = evaluate_variable(var);
+        value new_val;
+        if (old_val.type() == core::value_type::INT) {
+            auto v = old_val.as_int().value();
+            new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
+        } else {
+            auto v = old_val.as_double().value();
+            new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1.0 : v - 1.0);
+        }
+        current_env_->assign(name, new_val);
+        return new_val;
+    }
     default:
         throw std::runtime_error("Unsupported unary operator");
     }
+}
+
+value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
+    const auto& var = std::get<ast::variable_expr>(expr.operand_->data_);
+    std::string name{ var.name_.lexeme_ };
+    auto old_val = evaluate_variable(var);
+    value new_val;
+    if (old_val.type() == core::value_type::INT) {
+        int64_t v = old_val.as_int().value();
+        new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
+    } else {
+        double v = old_val.as_double().value();
+        new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1.0 : v - 1.0);
+    }
+    current_env_->assign(name, new_val);
+    return old_val;
 }
 
 value interpreter::evaluate_call(const ast::call_expr& expr) {

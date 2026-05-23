@@ -11,8 +11,9 @@
 namespace runtime {
 
 class environment {
-public:
     using builtin_fn = std::function<value(const std::vector<value>&)>;
+public:
+
     environment();
 
     void push_scope();

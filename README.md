@@ -115,7 +115,6 @@ Pipeline: source -> Lexer -> tokens -> Parser -> AST -> TypeChecker -> checked A
 ## Limitations
 
 - No arrays, pointers, or structs
-- No for loops, &&, || operators
 - Strings without escape sequences
 - Recursive functions may overflow (no depth limit)
 

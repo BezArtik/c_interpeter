@@ -33,6 +33,7 @@ private:
     void check_var_declaration(const ast::var_declaration& stmt);
     void check_block(const ast::block_stmt& stmt);
     void check_while(const ast::while_stmt& stmt);
+	void check_for(const ast::for_stmt& stmt);
     void check_if(const ast::if_stmt& stmt);
     void check_return_stmt(const ast::return_stmt& stmt);
     void check_func_declaration(const ast::func_declaration& stmt);
@@ -42,7 +43,10 @@ private:
     core::value_type type_of_variable(const ast::variable_expr& expr);
     core::value_type type_of_binary(const ast::binary_expr& expr);
     core::value_type type_of_unary(const ast::unary_expr& expr);
+	core::value_type type_of_postfix(const ast::postfix_expr& expr);
     core::value_type type_of_call(const ast::call_expr& expr);
+
+	static bool is_lvalue(const ast::expression& expr);
 };
 
 }

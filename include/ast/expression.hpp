@@ -26,6 +26,11 @@ struct unary_expr {
     std::unique_ptr<struct expression> operand_;
 };
 
+struct postfix_expr {
+	std::unique_ptr<struct expression> operand_;
+	core::token op_;
+};
+
 struct call_expr {
     core::token callee_;
     std::vector<std::unique_ptr<struct expression>> args_;
@@ -37,6 +42,7 @@ struct expression {
         variable_expr,
         binary_expr,
         unary_expr,
+        postfix_expr,
         call_expr
     > data_;
 
@@ -45,6 +51,7 @@ struct expression {
     expression(variable_expr e);
     expression(binary_expr e);
     expression(unary_expr e);
+    expression(postfix_expr e);
     expression(call_expr e);
 };
 

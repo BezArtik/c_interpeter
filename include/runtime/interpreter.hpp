@@ -32,6 +32,7 @@ private:
     void execute_var_declaration(const ast::var_declaration& stmt);
     void execute_block(const ast::block_stmt& stmt);
     void execute_while(const ast::while_stmt& stmt);
+	void execute_for(const ast::for_stmt& stmt);
     void execute_if(const ast::if_stmt& stmt);
     void execute_return_stmt(const ast::return_stmt& stmt);
     void execute_func_declaration(const ast::func_declaration& stmt);
@@ -41,6 +42,7 @@ private:
     value evaluate_variable(const ast::variable_expr& expr);
     value evaluate_binary(const ast::binary_expr& expr);
     value evaluate_unary(const ast::unary_expr& expr);
+	value evaluate_postfix(const ast::postfix_expr& expr);
     value evaluate_call(const ast::call_expr& expr);
 };
 

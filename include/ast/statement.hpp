@@ -27,6 +27,13 @@ struct while_stmt {
     std::unique_ptr<struct statement> body_;
 };
 
+struct for_stmt {
+	std::unique_ptr<struct statement> initializer_;
+	std::unique_ptr<expression> condition_;
+	std::unique_ptr<expression> increment_;
+	std::unique_ptr<struct statement> body_;
+};
+
 struct if_stmt {
     std::unique_ptr<expression> condition_;
     std::unique_ptr<struct statement> then_branch_;
@@ -55,6 +62,7 @@ struct statement {
         expression_stmt,
         var_declaration,
         block_stmt,
+        for_stmt,
         while_stmt,
         if_stmt,
         return_stmt,
@@ -66,6 +74,7 @@ struct statement {
     statement(var_declaration s);
     statement(block_stmt s);
     statement(while_stmt s);
+	statement(for_stmt s);
     statement(if_stmt s);
     statement(return_stmt s);
     statement(func_declaration s);

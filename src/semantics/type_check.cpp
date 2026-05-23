@@ -42,6 +42,7 @@ void type_checker::check_statement(const ast::statement& stmt) {
         [this](const ast::var_declaration& s) { check_var_declaration(s); },
         [this](const ast::block_stmt& s) { check_block(s); },
         [this](const ast::while_stmt& s) { check_while(s); },
+		[this](const ast::for_stmt& s) { check_for(s); },
         [this](const ast::if_stmt& s) { check_if(s); },
         [this](const ast::return_stmt& s) { check_return_stmt(s); },
         [this](const ast::func_declaration& s) { check_func_declaration(s); },
@@ -61,7 +62,7 @@ void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
         return;
     }
 
-    if (stmt.initializer_ != nullptr) {
+    if (stmt.initializer_) {
         core::value_type init_type = type_of(*stmt.initializer_);
         if (init_type == core::value_type::UNKNOWN) {
             return;
@@ -95,13 +96,31 @@ void type_checker::check_while(const ast::while_stmt& stmt) {
     check_statement(*stmt.body_);
 }
 
+void type_checker::check_for(const ast::for_stmt& stmt) {
+	symbols_.push_scope();
+	if (stmt.initializer_) {
+		check_statement(*stmt.initializer_);
+	}
+	if (stmt.condition_) {
+		core::value_type cond_type = type_of(*stmt.condition_);
+		if (cond_type != core::value_type::BOOL && cond_type != core::value_type::UNKNOWN) {
+			reporter_.error(0, 0, "for condition must be a boolean expression");
+		}
+	}
+	if (stmt.increment_) {
+		type_of(*stmt.increment_);
+	}
+	check_statement(*stmt.body_);
+	symbols_.pop_scope();
+}
+
 void type_checker::check_if(const ast::if_stmt& stmt) {
     core::value_type cond_type = type_of(*stmt.condition_);
     if (cond_type != core::value_type::BOOL && cond_type != core::value_type::UNKNOWN) {
         reporter_.error(0, 0, "if condition must be a boolean expression");
     }
     check_statement(*stmt.then_branch_);
-    if (stmt.else_branch_ != nullptr) {
+    if (stmt.else_branch_) {
         check_statement(*stmt.else_branch_);
     }
 }
@@ -113,7 +132,7 @@ void type_checker::check_return_stmt(const ast::return_stmt& stmt) {
         return;
     }
 
-    if (stmt.value_ == nullptr) {
+    if (!stmt.value_) {
         if (*curr_return_type_ != core::value_type::VOID) {
             reporter_.error(stmt.keyword_.line_, stmt.keyword_.column_,
                 "return with no value in non-void function");
@@ -172,6 +191,7 @@ core::value_type type_checker::type_of(const ast::expression& expr) {
         [this](const ast::variable_expr& e) { return type_of_variable(e); },
         [this](const ast::binary_expr& e) { return type_of_binary(e); },
         [this](const ast::unary_expr& e) { return type_of_unary(e); },
+		[this](const ast::postfix_expr& e) { return type_of_postfix(e); },
         [this](const ast::call_expr& e) { return type_of_call(e); },
         }, expr.data_);
 }
@@ -264,6 +284,10 @@ core::value_type type_checker::type_of_binary(const ast::binary_expr& expr) {
     return core::value_type::UNKNOWN;
 }
 
+bool type_checker::is_lvalue(const ast::expression& expr) {
+    return std::holds_alternative<ast::variable_expr>(expr.data_);
+}
+
 core::value_type type_checker::type_of_unary(const ast::unary_expr& expr) {
     core::value_type operand_type = type_of(*expr.operand_);
     if (operand_type == core::value_type::UNKNOWN) {
@@ -281,6 +305,20 @@ core::value_type type_checker::type_of_unary(const ast::unary_expr& expr) {
         return operand_type;
     }
 
+	if (op == core::token_type::INCREMENT || op == core::token_type::DECREMENT) {
+		if (operand_type != core::value_type::INT && operand_type != core::value_type::DOUBLE) {
+			reporter_.error(expr.op_.line_, expr.op_.column_,
+				"increment/decrement requires numeric operand");
+			return core::value_type::UNKNOWN;
+		}
+		if (!is_lvalue(*expr.operand_)) {
+			reporter_.error(expr.op_.line_, expr.op_.column_,
+				"increment/decrement requires an lvalue operand");
+			return core::value_type::UNKNOWN;
+		}
+		return operand_type;
+	}
+
     if (op == core::token_type::BANG) {
         if (operand_type != core::value_type::BOOL) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
@@ -292,6 +330,24 @@ core::value_type type_checker::type_of_unary(const ast::unary_expr& expr) {
 
     reporter_.error(expr.op_.line_, expr.op_.column_, "unsupported unary operator");
     return core::value_type::UNKNOWN;
+}
+
+core::value_type type_checker::type_of_postfix(const ast::postfix_expr& expr) {
+    core::value_type operand_type = type_of(*expr.operand_);
+    if (operand_type == core::value_type::UNKNOWN) {
+        return core::value_type::UNKNOWN;
+    }
+    if (operand_type != core::value_type::INT && operand_type != core::value_type::DOUBLE) {
+        reporter_.error(expr.op_.line_, expr.op_.column_,
+            "increment/decrement requires numeric operand");
+        return core::value_type::UNKNOWN;
+    }
+    if (!is_lvalue(*expr.operand_)) {
+        reporter_.error(expr.op_.line_, expr.op_.column_,
+            "increment/decrement requires variable");
+        return core::value_type::UNKNOWN;
+    }
+    return operand_type;
 }
 
 core::value_type type_checker::type_of_call(const ast::call_expr& expr) {

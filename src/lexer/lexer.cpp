@@ -30,8 +30,8 @@ void lexer::scan_token() {
     case '}': add_token(core::token_type::RIGHT_BRACE); break;
     case ',': add_token(core::token_type::COMMA); break;
     case '.': add_token(core::token_type::DOT); break;
-    case '-': add_token(core::token_type::MINUS); break;
-    case '+': add_token(core::token_type::PLUS); break;
+	case '-': add_token(match('-') ? core::token_type::DECREMENT : core::token_type::MINUS); break;
+	case '+': add_token(match('+') ? core::token_type::INCREMENT : core::token_type::PLUS); break;
     case ';': add_token(core::token_type::SEMICOLON); break;
     case '*': add_token(core::token_type::STAR); break;
     case '%': add_token(core::token_type::PERCENT); break;
@@ -40,14 +40,17 @@ void lexer::scan_token() {
     case '=': add_token(match('=') ? core::token_type::EQUAL_EQUAL : core::token_type::EQUAL); break;
     case '<': add_token(match('=') ? core::token_type::LESS_EQUAL : core::token_type::LESS); break;
     case '>': add_token(match('=') ? core::token_type::GREATER_EQUAL : core::token_type::GREATER); break;
-
+        
+    case '&': add_token(match('&') ? core::token_type::AND : core::token_type::UNKNOWN); break;
+    case '|': add_token(match('|') ? core::token_type::OR : core::token_type::UNKNOWN); break;
+	
     case '/':
-        if (match('/')) {
-            while (peek() != '\n' && !is_at_end()) advance();
-        } else {
-            add_token(core::token_type::SLASH);
-        }
-        break;
+		if (match('/')) {
+			while (peek() != '\n' && !is_at_end()) advance();
+		} else {
+			add_token(core::token_type::SLASH);
+		}
+		break;
 
     case ' ':
     case '\r':

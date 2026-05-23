@@ -35,6 +35,7 @@ private:
     stmt_ptr var_declaration(core::value_type type, const core::token& name);
     stmt_ptr func_declaration(core::value_type return_type, const core::token& name);
     stmt_ptr while_statement();
+	stmt_ptr for_statement();
     stmt_ptr if_statement();
     stmt_ptr block_statement();
     stmt_ptr return_statement();
@@ -46,10 +47,14 @@ private:
     expr_ptr expression();
     expr_ptr equality();
     expr_ptr assignment();
+    expr_ptr logic_or();
+    expr_ptr logic_and();
     expr_ptr comparison();
     expr_ptr term();
     expr_ptr factor();
     expr_ptr unary();
+
+	expr_ptr postfix_unary(expr_ptr operand);
     expr_ptr primary();
     expr_ptr finish_call(const core::token& callee);
 

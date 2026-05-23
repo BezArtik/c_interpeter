@@ -148,7 +148,7 @@ ast::func_param parser::parse_param() {
         throw std::runtime_error("Expect parameter type.");
     }
 
-    core::token name = consume(core::token_type::IDENTIFIER, "Expect parameter name.");
+    auto name = consume(core::token_type::IDENTIFIER, "Expect parameter name.");
 
     ast::func_param param;
     param.type_ = type;
@@ -160,6 +160,9 @@ parser::stmt_ptr parser::statement() {
     if (match({ core::token_type::WHILE })) {
         return while_statement();
     }
+	if (match({ core::token_type::FOR })) {
+		return for_statement();
+	}
     if (match({ core::token_type::IF })) {
         return if_statement();
     }
@@ -197,6 +200,39 @@ parser::stmt_ptr parser::while_statement() {
     return stmt;
 }
 
+parser::stmt_ptr parser::for_statement() {
+	consume(core::token_type::LEFT_PAREN, "Expect '(' after 'for'.");
+	parser::stmt_ptr initializer = nullptr;
+	if (match({ core::token_type::SEMICOLON })) {}
+	else if (match({ core::token_type::INT_KEYWORD, core::token_type::DOUBLE_KEYWORD,
+					core::token_type::BOOL_KEYWORD, core::token_type::STRING_KEYWORD })) {
+		auto type_opt = core::token_to_value_type(prev().type_);
+		if (!type_opt) throw std::runtime_error("Unknown type");
+		initializer = var_declaration(*type_opt, consume(core::token_type::IDENTIFIER, "Expect variable name."));
+	} else {
+		initializer = statement();
+	}
+	parser::expr_ptr condition = nullptr;
+	if (!check(core::token_type::SEMICOLON)) {
+		condition = expression();
+	}
+	consume(core::token_type::SEMICOLON, "Expect ';' after loop condition.");
+	parser::expr_ptr increment = nullptr;
+	if (!check(core::token_type::RIGHT_PAREN)) {
+		increment = expression();
+	}
+	consume(core::token_type::RIGHT_PAREN, "Expect ')' after for clauses.");
+	auto body = statement();
+	auto for_stmt = std::make_unique<ast::for_stmt>();
+	for_stmt->initializer_ = std::move(initializer);
+	for_stmt->condition_ = std::move(condition);
+	for_stmt->increment_ = std::move(increment);
+	for_stmt->body_ = std::move(body);
+	auto stmt = std::make_unique<ast::statement>();
+	stmt->data_ = std::move(*for_stmt);
+	return stmt;
+}
+
 parser::stmt_ptr parser::if_statement() {
     consume(core::token_type::LEFT_PAREN, "Expect '(' after 'if'.");
     auto condition_ = expression();
@@ -220,7 +256,7 @@ parser::stmt_ptr parser::if_statement() {
 }
 
 parser::stmt_ptr parser::return_statement() {
-    core::token keyword = prev();
+    auto keyword = prev();
 
     parser::expr_ptr value = nullptr;
     if (!check(core::token_type::SEMICOLON)) {
@@ -306,21 +342,31 @@ parser::expr_ptr parser::factor() {
         [this] { return unary(); });
 }
 
+parser::expr_ptr parser::logic_or() {
+    return parse_binary({ core::token_type::OR },
+        [this] { return logic_and(); });
+}
+
+parser::expr_ptr parser::logic_and() {
+    return parse_binary({ core::token_type::AND },
+        [this] { return equality(); });
+}
+
 parser::expr_ptr parser::assignment() {
-    auto expr = equality();
+    auto expr = logic_or();
 
     if (match({ core::token_type::EQUAL })) {
         core::token op = prev();
         auto value = assignment();
         return make_binary(std::move(expr), op, std::move(value));
     }
-
     return expr;
 }
 
 parser::expr_ptr parser::unary() {
-    if (match({ core::token_type::BANG, core::token_type::MINUS })) {
-        core::token op = prev();
+    if (match({ core::token_type::BANG, core::token_type::MINUS,
+                core::token_type::INCREMENT, core::token_type::DECREMENT })) {
+        auto op = prev();
         auto operand = unary();
 
         auto unary_expr = std::make_unique<ast::unary_expr>();
@@ -333,6 +379,18 @@ parser::expr_ptr parser::unary() {
     }
 
     return primary();
+}
+
+parser::expr_ptr parser::postfix_unary(parser::expr_ptr operand) {
+    core::token op = prev();
+
+    auto postfix = std::make_unique<ast::postfix_expr>();
+    postfix->op_ = op;
+    postfix->operand_ = std::move(operand);
+
+    auto expr = std::make_unique<ast::expression>();
+    expr->data_ = std::move(*postfix);
+    return expr;
 }
 
 parser::expr_ptr parser::primary() {
@@ -358,6 +416,12 @@ parser::expr_ptr parser::primary() {
 
         auto expr = std::make_unique<ast::expression>();
         expr->data_ = std::move(*var);
+
+		if (match({ core::token_type::INCREMENT, core::token_type::DECREMENT })) {
+			core::token op = prev();
+			return postfix_unary(std::move(expr));
+		}
+
         return expr;
     }
 

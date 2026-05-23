@@ -1,25 +1,20 @@
-int is_prime(int n) {
-    if (n < 2) {
-        return 0;
+bool is_prime(int n) {
+    if (n <= 1) { return false; }
+    if (n <= 3) { return true; }
+    if (n % 2 == 0 || n % 3 == 0) { return false; }
+    for (int i = 5; i * i <= n; i = i + 6) {
+        if (n % i == 0 || n % (i + 2) == 0) { return false; }
     }
-    int d = 2;
-    while (d < n) {
-        if (n % d == 0) {
-            return 0;
-        }
-        d = d + 1;
-    }
-    return 1;
+    return true;
 }
 
 int count = 0;
-int n = 2;
-while (n <= 100) {
-    if (is_prime(n) == 1) {
-        print(n);
-        count = count + 1;
-    }
-    n = n + 1;
+for (int n = 2; n <= 100; n++) {
+	bool prime = is_prime(n);
+    if (prime) {
+		print(n);
+		++count;
+	}
 }
 print("total:");
 print(count);
