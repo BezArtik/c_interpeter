@@ -1,11 +1,27 @@
+// interpreter.cpp
+
+// This file implements the interpreter for the custom programming language. 
+// It defines the logic for executing statements and evaluating expressions, 
+// managing variable scopes, and handling function calls. 
+// The interpreter uses a visitor pattern to process different types of 
+// statements and expressions, and it maintains an environment to store 
+// variable values and built-in functions. Error handling is done through 
+// exceptions, which are caught and reported using the provided error reporter.
+
+
+
 #include "runtime/interpreter.hpp"
+#include "runtime/environment.hpp"
 #include "ast/expression.hpp"
 #include "ast/statement.hpp"
 #include "core/overloaded.hpp"
+#include "core/builtins.hpp"
 #include "semantics/type_check.hpp"
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include <cmath>
+#include <iterator>
 
 namespace runtime {
 
@@ -14,14 +30,16 @@ interpreter::interpreter(core::error_reporter& reporter)
     , global_env_(std::make_unique<environment>())
     , current_env_(global_env_.get()) {
 
-    global_env_->define_builtin("print", [](const std::vector<value>& args) {
-        for (size_t i = 0; i < args.size(); i++) {
-            if (i > 0) std::cout << " ";
-            std::cout << args[i].to_string();
-        }
-        std::cout << std::endl;
-        return value();
-        });
+    for (const auto& def : core::builtins()) {
+        global_env_->define_builtin(def.name_, def.impl_);
+    }
+}
+
+interpreter::scope_guard::scope_guard(environment* env) : env_(env) {
+    env_->push_scope();
+}
+interpreter::scope_guard::~scope_guard() {
+    env_->pop_scope();
 }
 
 void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements) {
@@ -65,7 +83,7 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
         }
         }();
 
-    if (stmt.initializer_ != nullptr) {
+    if (stmt.initializer_) {
         auto init = evaluate(*stmt.initializer_);
         auto init_type = init.type();
         auto target_type = stmt.type_;
@@ -83,23 +101,22 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
 }
 
 void interpreter::execute_block(const ast::block_stmt& stmt) {
-    current_env_->push_scope();
+    scope_guard guard(current_env_);
     for (const auto& s : stmt.statements_) {
         execute(*s);
     }
-    current_env_->pop_scope();
 }
 
 void interpreter::execute_while(const ast::while_stmt& stmt) {
     while (true) {
-        value cond = evaluate(*stmt.condition_);
+        auto cond = evaluate(*stmt.condition_);
         if (!cond.as_bool().value_or(false)) break;
         execute(*stmt.body_);
     }
 }
 
 void interpreter::execute_for(const ast::for_stmt& stmt) {
-	current_env_->push_scope();
+	scope_guard guard(current_env_);
 	if (stmt.initializer_) {
 		execute(*stmt.initializer_);
 	}
@@ -113,7 +130,6 @@ void interpreter::execute_for(const ast::for_stmt& stmt) {
 			evaluate(*stmt.increment_);
 		}
 	}
-	current_env_->pop_scope();
 }
 
 void interpreter::execute_if(const ast::if_stmt& stmt) {
@@ -127,11 +143,7 @@ void interpreter::execute_if(const ast::if_stmt& stmt) {
 
 void interpreter::execute_return_stmt(const ast::return_stmt& stmt) {
     value ret_val;
-    if (stmt.value_) {
-        ret_val = evaluate(*stmt.value_);
-    } else {
-        ret_val = value();
-    }
+	stmt.value_ ? ret_val = evaluate(*stmt.value_) : ret_val = value();
     throw return_exception{ std::move(ret_val) };
 }
 
@@ -155,7 +167,7 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr) {
     const auto& token = expr.value_;
     switch (token.type_) {
     case core::token_type::NUMBER: {
-        std::string_view lex = token.lexeme_;
+        auto lex = token.lexeme_;
         if (core::is_double_literal(lex)) {
             return value(std::stod(std::string(lex)));
         } else {
@@ -167,7 +179,7 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr) {
     case core::token_type::FALSE:
         return value(false);
     case core::token_type::STRING: {
-        std::string_view lex = token.lexeme_;
+        auto lex = token.lexeme_;
         std::string s{ lex.substr(1, lex.size() - 2) };
         return value(std::move(s));
     }
@@ -216,6 +228,30 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
         return value(right.as_bool().value_or(false));
     }
 
+    if (expr.op_.type_ == core::token_type::PLUS_EQUAL ||
+        expr.op_.type_ == core::token_type::MINUS_EQUAL ||
+        expr.op_.type_ == core::token_type::STAR_EQUAL ||
+        expr.op_.type_ == core::token_type::SLASH_EQUAL ||
+        expr.op_.type_ == core::token_type::PERCENT_EQUAL) {
+
+        const auto& var = std::get<ast::variable_expr>(expr.left_->data_);
+        std::string name{ var.name_.lexeme_ };
+        auto left = evaluate_variable(var);
+        auto right = evaluate(*expr.right_);
+        value result;
+
+        switch (expr.op_.type_) {
+        case core::token_type::PLUS_EQUAL:  result = left.add(right); break;
+        case core::token_type::MINUS_EQUAL: result = left.sub(right); break;
+        case core::token_type::STAR_EQUAL:  result = left.mul(right); break;
+        case core::token_type::SLASH_EQUAL: result = left.div(right); break;
+        case core::token_type::PERCENT_EQUAL: result = left.mod(right); break;
+        }
+
+        current_env_->assign(name, result);
+        return result;
+    }
+
     auto left = evaluate(*expr.left_);
     auto right = evaluate(*expr.right_);
 
@@ -239,7 +275,7 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
 }
 
 value interpreter::evaluate_unary(const ast::unary_expr& expr) {
-    value operand = evaluate(*expr.operand_);
+    auto operand = evaluate(*expr.operand_);
 
     switch (expr.op_.type_) {
     case core::token_type::MINUS: {
@@ -280,10 +316,10 @@ value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
     auto old_val = evaluate_variable(var);
     value new_val;
     if (old_val.type() == core::value_type::INT) {
-        int64_t v = old_val.as_int().value();
+        auto v = old_val.as_int().value();
         new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
     } else {
-        double v = old_val.as_double().value();
+        auto v = old_val.as_double().value();
         new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1.0 : v - 1.0);
     }
     current_env_->assign(name, new_val);
@@ -296,6 +332,7 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
     auto builtin = current_env_->get_builtin(name);
     if (builtin) {
         std::vector<value> args;
+		args.reserve(expr.args_.size());
         for (const auto& arg : expr.args_) {
             args.push_back(evaluate(*arg));
         }
@@ -310,18 +347,17 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
     const ast::func_declaration& func = *func_it->second;
 
     std::vector<value> args;
+    args.reserve(expr.args_.size());
     for (const auto& arg : expr.args_) {
         args.push_back(evaluate(*arg));
     }
 
-    current_env_->push_scope();
+    scope_guard guard(current_env_);
 
     for (size_t i = 0; i < func.params_.size(); i++) {
         std::string param_name{ func.params_[i].name_.lexeme_ };
         current_env_->define(param_name, std::move(args[i]));
     }
-
-    auto* prev_env = current_env_;
 
     value result;
     try {
@@ -339,10 +375,7 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
         result = std::move(ret.return_value_);
     }
 
-    current_env_ = prev_env;
-    current_env_->pop_scope();
-
     return result;
 }
 
-}
+} // namespace runtime

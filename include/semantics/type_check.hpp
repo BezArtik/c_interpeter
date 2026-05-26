@@ -1,3 +1,7 @@
+// This file defines the type_checker class, which 
+// performs semantic analysis and type checking on the AST.
+
+
 #pragma once
 
 #include <memory>
@@ -16,16 +20,9 @@ public:
 
     bool check(const std::vector<std::unique_ptr<ast::statement>>& statements);
 
-
 private:
-    core::error_reporter& reporter_;
-    symbol_table symbols_;
-    std::optional<core::value_type> curr_return_type_;
-    std::unordered_map<std::string, std::vector<std::vector<core::value_type>>> builtins_;
 
     void register_builtins();
-    void add_builtin(const std::string& name, core::value_type return_type,
-        const std::vector<core::value_type>& param_types);
 
     static bool is_assignable(core::value_type target, core::value_type source) noexcept;
     void check_statement(const ast::statement& stmt);
@@ -47,6 +44,17 @@ private:
     core::value_type type_of_call(const ast::call_expr& expr);
 
 	static bool is_lvalue(const ast::expression& expr);
+
+    core::error_reporter& reporter_;
+    symbol_table symbols_;
+    std::optional<core::value_type> curr_return_type_;
+
+	struct builtin_overload {
+		std::vector<core::value_type> param_types_;
+		core::value_type return_type_;
+	};
+
+	std::unordered_map<std::string, std::vector<builtin_overload>> builtins_;
 };
 
-}
+} // namespace semantics

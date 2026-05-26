@@ -1,3 +1,10 @@
+// error_report.cpp
+
+// The error_reporter class provides methods to report errors with specific line and column information, c
+// heck if any errors have been reported, and clear the error state. 
+// The implementation uses C++20 features such as std::format for formatting error messages.
+
+
 #include "core/error_report.hpp"
 #include <format>
 #include <string_view>
@@ -22,4 +29,4 @@ void error_reporter::report(size_t line, size_t column, std::string_view where, 
     had_error_ = true;
 }
 
-}
+} // namespace core

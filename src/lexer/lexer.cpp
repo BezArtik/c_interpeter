@@ -1,3 +1,13 @@
+// lexer.cpp
+
+// This file implements the lexer for a programming language. 
+// The lexer takes a source code string and produces a list of tokens, 
+// which are the basic building blocks of the language's syntax. 
+// The lexer handles various token types, including identifiers, 
+// numbers, strings, and operators. It also reports errors 
+// for unexpected characters and unterminated strings.
+
+
 #include "lexer/lexer.hpp"
 #include "core/token.hpp"
 #include "core/error_report.hpp"
@@ -30,11 +40,13 @@ void lexer::scan_token() {
     case '}': add_token(core::token_type::RIGHT_BRACE); break;
     case ',': add_token(core::token_type::COMMA); break;
     case '.': add_token(core::token_type::DOT); break;
-	case '-': add_token(match('-') ? core::token_type::DECREMENT : core::token_type::MINUS); break;
-	case '+': add_token(match('+') ? core::token_type::INCREMENT : core::token_type::PLUS); break;
-    case ';': add_token(core::token_type::SEMICOLON); break;
-    case '*': add_token(core::token_type::STAR); break;
-    case '%': add_token(core::token_type::PERCENT); break;
+    case '+': add_token(match('=') ? core::token_type::PLUS_EQUAL 
+        : match('+') ? core::token_type::INCREMENT : core::token_type::PLUS); break;
+    case '-': add_token(match('=') ? core::token_type::MINUS_EQUAL 
+        : match('-') ? core::token_type::DECREMENT : core::token_type::MINUS); break;
+    case '*': add_token(match('=') ? core::token_type::STAR_EQUAL : core::token_type::STAR); break;
+    case '%': add_token(match('=') ? core::token_type::PERCENT_EQUAL : core::token_type::PERCENT); break;
+	case ';': add_token(core::token_type::SEMICOLON); break;
 
     case '!': add_token(match('=') ? core::token_type::BANG_EQUAL : core::token_type::BANG); break;
     case '=': add_token(match('=') ? core::token_type::EQUAL_EQUAL : core::token_type::EQUAL); break;
@@ -48,7 +60,7 @@ void lexer::scan_token() {
 		if (match('/')) {
 			while (peek() != '\n' && !is_at_end()) advance();
 		} else {
-			add_token(core::token_type::SLASH);
+			add_token(match('=') ? core::token_type::SLASH_EQUAL : core::token_type::SLASH);
 		}
 		break;
 
@@ -145,4 +157,4 @@ void lexer::add_token(core::token_type type) {
 }
 
 
-}
+} // namespace lexer

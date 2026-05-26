@@ -1,18 +1,25 @@
+// This sample code demonstrates how to check for prime numbers and count them up to 100.
+// The function `is_prime` checks if a number is prime by testing divisibility against 
+// known small primes and then using a loop to check for factors up to the square root of the number. 
+// The main loop iterates through numbers from 2 to 100, prints the prime numbers, and counts them.
+
 bool is_prime(int n) {
     if (n <= 1) { return false; }
     if (n <= 3) { return true; }
     if (n % 2 == 0 || n % 3 == 0) { return false; }
-    for (int i = 5; i * i <= n; i = i + 6) {
+    for (int i = 5; i * i <= n; i += 6) {
         if (n % i == 0 || n % (i + 2) == 0) { return false; }
     }
     return true;
 }
 
 int count = 0;
-for (int n = 2; n <= 100; n++) {
-	bool prime = is_prime(n);
+print("Enter the upper limit for prime numbers: ");
+int n = to_int(input());
+for (int i = 2; i <= n; ++i) {
+	bool prime = is_prime(i);
     if (prime) {
-		print(n);
+		print(i);
 		++count;
 	}
 }

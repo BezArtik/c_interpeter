@@ -1,3 +1,7 @@
+// The parser class is responsible for converting a
+// sequence of tokens into an abstract syntax tree (AST).
+
+
 #pragma once
 
 #include "ast/statement.hpp"
@@ -66,4 +70,4 @@ private:
     size_t current_ = 0;
 };
 
-} 
+} // namespace parser

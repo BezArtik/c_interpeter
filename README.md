@@ -7,7 +7,7 @@ Tree-walk interpreter for a C-like language, written in C++20.
 
 - Data types: int, double, bool, string, void
 - Variables with lexical scoping
-- Control flow: if/else, while
+- Control flow: if/else, while, for
 - Functions with parameters, return values, and type checking
 - Built-in print function for console output
 - Static type checking before execution
@@ -46,6 +46,7 @@ string msg = "hello";
 ```
 ### Control Flow
 ```cpp
+int x = -4;
 if (x > 0) {
     print("positive");
 } else {
@@ -53,8 +54,14 @@ if (x > 0) {
 }
 ```
 ```cpp
+int x = 10;
 while (x > 0) {
     x = x - 1;
+}
+```
+```cpp
+for (int i = 0; i < 10; i++) {
+    print(i);
 }
 ```
 ### Functions
@@ -69,6 +76,7 @@ void greet(string name) {
 }
 
 int result = add(3, 4);
+print(result); // 7
 greet("world");
 ```
 
@@ -96,7 +104,7 @@ print("text");
 ## Examples
 
 `fib.c`           -- Fibonacci numbers  
-`prime.c`         -- Prime numbers (trial division)  
+`prime.c`         -- Prime numbers 
 `monte_carlo.c`   -- Monte Carlo pi calculation  
 `leibniz.c`       -- Leibniz series for pi  
 `print_test.c`    -- Type and print demo  

@@ -1,10 +1,18 @@
+// This file defines the runtime value class, 
+// which represents a value in the runtime environment. 
+// It can hold different types of values (int, double, bool, string) 
+// and provides methods for type conversion and basic operations.
+
+
 #pragma once
 
+
+#include "core/type.hpp"
 #include <string>
 #include <variant>
 #include <optional>
 #include <cstdint>
-#include "core/type.hpp"
+
 
 namespace runtime {
 
@@ -21,6 +29,7 @@ public:
 
     core::value_type type() const;
 
+	int64_t to_int() const;
     double to_double() const;
     std::string to_string() const;
 
@@ -50,4 +59,4 @@ private:
     std::variant<int64_t, double, bool, std::string, std::monostate> data_;
 };
 
-}
+} // namespace runtime

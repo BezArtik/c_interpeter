@@ -1,3 +1,7 @@
+// This file defines the abstract syntax tree (AST) 
+// nodes for expressions in the language.
+
+
 #pragma once
 
 #include "core/token.hpp"
@@ -55,4 +59,4 @@ struct expression {
     expression(call_expr e);
 };
 
-}
+} // namespace ast

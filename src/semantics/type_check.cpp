@@ -1,8 +1,19 @@
+// type_check.cpp
+
+// This file implements the type checker for a programming language.
+
+
 #include "semantics/type_check.hpp"
 #include "ast/expression.hpp"
 #include "ast/statement.hpp"
 #include "core/overloaded.hpp"
+#include "core/token.hpp"
+#include "core/builtins.hpp"
 #include <string>
+#include <algorithm>
+#include <vector>
+#include <iterator>
+#include <iostream>
 
 namespace semantics {
 
@@ -19,15 +30,11 @@ bool type_checker::check(const std::vector<std::unique_ptr<ast::statement>>& sta
 }
 
 void type_checker::register_builtins() {
-    add_builtin("print", core::value_type::VOID, { core::value_type::INT });
-    add_builtin("print", core::value_type::VOID, { core::value_type::DOUBLE });
-    add_builtin("print", core::value_type::VOID, { core::value_type::BOOL });
-    add_builtin("print", core::value_type::VOID, { core::value_type::STRING });
-}
-
-void type_checker::add_builtin(const std::string& name, core::value_type return_type,
-    const std::vector<core::value_type>& param_types) {
-    builtins_[name].push_back(param_types);
+    for (const auto& def : core::builtins()) {
+        for (const auto& params : def.overloads_) {
+			builtins_[def.name_].push_back({ params, def.return_type_ });
+        }
+    }
 }
 
 bool type_checker::is_assignable(core::value_type target, core::value_type source) noexcept {
@@ -75,7 +82,7 @@ void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
     }
 
     symbols_.define(name_, stmt.type_);
-    if (stmt.initializer_ != nullptr) {
+    if (stmt.initializer_) {
         symbols_.mark_initialized(name_);
     }
 }
@@ -199,11 +206,8 @@ core::value_type type_checker::type_of(const ast::expression& expr) {
 core::value_type type_checker::type_of_literal(const ast::literal_expr& expr) {
     const auto& token = expr.value_;
     switch (token.type_) {
-    case core::token_type::NUMBER: {
-        std::string_view lex = token.lexeme_;
-        bool is_double = (lex.find('.') != std::string_view::npos);
-        return is_double ? core::value_type::DOUBLE : core::value_type::INT;
-    }
+    case core::token_type::NUMBER: 
+		return core::is_double_literal(token.lexeme_) ? core::value_type::DOUBLE : core::value_type::INT;
     case core::token_type::TRUE:
     case core::token_type::FALSE:
         return core::value_type::BOOL;
@@ -243,6 +247,32 @@ core::value_type type_checker::type_of_binary(const ast::binary_expr& expr) {
         if (!is_assignable(left, right)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 "type mismatch in assignment");
+            return core::value_type::UNKNOWN;
+        }
+        return left;
+    }
+
+    if (op == core::token_type::PLUS_EQUAL ||
+        op == core::token_type::MINUS_EQUAL ||
+        op == core::token_type::STAR_EQUAL ||
+        op == core::token_type::SLASH_EQUAL ||
+        op == core::token_type::PERCENT_EQUAL) {
+
+        if (!is_lvalue(*expr.left_)) {
+            reporter_.error(expr.op_.line_, expr.op_.column_,
+                "compound assignment requires variable");
+            return core::value_type::UNKNOWN;
+        }
+
+        if (op == core::token_type::PLUS_EQUAL && 
+            left == core::value_type::STRING && 
+            right == core::value_type::STRING) {
+            return core::value_type::STRING;
+        }
+
+        if (!is_numeric(left) || !is_numeric(right)) {
+            reporter_.error(expr.op_.line_, expr.op_.column_,
+                "compound assignment requires numeric operands");
             return core::value_type::UNKNOWN;
         }
         return left;
@@ -352,23 +382,28 @@ core::value_type type_checker::type_of_postfix(const ast::postfix_expr& expr) {
 
 core::value_type type_checker::type_of_call(const ast::call_expr& expr) {
     std::string name{ expr.callee_.lexeme_ };
-    auto builtin_it = builtins_.find(name);
-    if (builtin_it != builtins_.end()) {
-        for (const auto& param_types : builtin_it->second) {
-            if (expr.args_.size() == param_types.size()) {
-                bool match = true;
-                for (size_t i = 0; i < expr.args_.size(); i++) {
-                    core::value_type arg_type = type_of(*expr.args_[i]);
-                    if (arg_type != param_types[i]) {
-                        match = false;
-                        break;
-                    }
-                }
-                if (match) {
-                    return core::value_type::VOID; 
-                }
-            }
+
+    if (auto it = builtins_.find(name); it != builtins_.end()) {
+		std::vector<core::value_type> arg_types;
+		arg_types.reserve(expr.args_.size());
+        for (const auto& arg : expr.args_) {
+            arg_types.push_back(type_of(*arg));
         }
+
+		auto overload = 
+            std::find_if(it->second.begin(),  it->second.end(),
+			[&](const builtin_overload& o) {
+
+                return o.param_types_.size() == arg_types.size() &&
+                    std::equal(o.param_types_.begin(), 
+                               o.param_types_.end(), 
+                               arg_types.begin());
+			});
+
+        if (overload != it->second.end()) {
+            return overload->return_type_;
+        }
+
         reporter_.error(expr.callee_.line_, expr.callee_.column_,
             "no matching overload for builtin '" + name + "'");
         return core::value_type::UNKNOWN;
@@ -411,4 +446,4 @@ core::value_type type_checker::type_of_call(const ast::call_expr& expr) {
     return info->type_;
 }
 
-}
+} // namespace semantics

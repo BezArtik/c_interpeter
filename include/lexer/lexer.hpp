@@ -1,3 +1,7 @@
+// This file defines the lexer class, which is responsible
+// for converting source code into a sequence of tokens.
+
+
 #pragma once
 
 #include "core/token.hpp"
@@ -39,4 +43,4 @@ private:
     size_t column_ = 1;
 };
 
-}
+} // namespace lexer

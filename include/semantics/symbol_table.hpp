@@ -1,3 +1,13 @@
+// This header defines the symbol table for the 
+// semantic analysis phase of a interpreter. It includes definitions 
+// for symbol information, function information, and the 
+// symbol table class itself. The symbol table supports 
+// scoping, allowing for nested scopes and proper symbol 
+// resolution. It also provides functionality to define 
+// variables and functions, look up symbols, check for local 
+// definitions, and mark symbols as initialized.
+
+
 #pragma once
 
 #include "core/type.hpp"
@@ -34,7 +44,7 @@ public:
 	symbol_table();
 
 	void push_scope();
-	void pop_scope();
+	void pop_scope() noexcept;
 
 	void define(const std::string& name, core::value_type type);
 	void define_function(const std::string& name, core::value_type return_type,
@@ -56,4 +66,4 @@ private:
 
 };
 
-}
+} // namespace semantics

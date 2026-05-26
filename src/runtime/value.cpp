@@ -1,5 +1,12 @@
+// value.cpp
+
+// This file implements the value class which represents a runtime value in the interpreter. 
+// It supports various types and operations on them.
+
+
 #include "runtime/value.hpp"
 #include <stdexcept>
+#include <cstdint>
 
 namespace runtime {
 
@@ -20,6 +27,13 @@ core::value_type value::type() const {
         else if constexpr (std::is_same_v<T, std::string>) return core::value_type::STRING;
         else return core::value_type::VOID;
         }, data_);
+}
+
+int64_t value::to_int() const {
+	if (auto i = as_int()) return static_cast<int64_t>(*i);
+	if (auto d = as_double()) return static_cast<int64_t>(*d);
+	if (auto s = as_string()) return std::stoll(*s);
+	throw std::runtime_error("Cannot convert to int");
 }
 
 double value::to_double() const {
@@ -153,4 +167,4 @@ value value::not_op() const {
 }
 
 
-}
+} // namespace runtime

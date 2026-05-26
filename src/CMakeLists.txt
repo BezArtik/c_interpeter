@@ -11,6 +11,7 @@ target_sources(interpreter
         core/error_report.cpp 
         core/type.cpp
         core/token.cpp
+        core/builtins.cpp
 
         ast/expression.cpp
         ast/statement.cpp
@@ -32,6 +33,6 @@ target_include_directories(interpreter
 
 add_executable(cint
     main.cpp
- "core/token.cpp")
+)
 
 target_link_libraries(cint PRIVATE interpreter)

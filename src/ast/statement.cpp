@@ -1,3 +1,5 @@
+// statement.cpp
+
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 #include <vector>
@@ -15,4 +17,4 @@ statement::statement(if_stmt s) : data_(std::move(s)) {}
 statement::statement(return_stmt s) : data_(std::move(s)) {}
 statement::statement(func_declaration s) : data_(std::move(s)) {}
 
-}
+} // namespace ast

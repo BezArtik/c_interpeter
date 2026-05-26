@@ -1,7 +1,13 @@
+// parser.cpp
+
+// This file implements the parser for a programming language.
+
 #include "parser/parser.hpp"
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include <utility>
+#include <algorithm>
 
 namespace parser {
 
@@ -21,8 +27,8 @@ std::vector<parser::stmt_ptr> parser::parse() {
 }
 
 bool parser::match(std::initializer_list<core::token_type> types) noexcept {
-    for (auto type_ : types) {
-        if (check(type_)) {
+    for (auto type : types) {
+        if (check(type)) {
             advance();
             return true;
         }
@@ -64,9 +70,9 @@ parser::stmt_ptr parser::declaration() {
             if (match({ tt })) {
                 auto type_opt = core::token_to_value_type(prev().type_);
                 if (!type_opt) throw std::runtime_error("Unknown type");
-                core::value_type type = *type_opt;
+                auto type = *type_opt;
 
-                core::token name = consume(core::token_type::IDENTIFIER, "Expect name after type.");
+                auto name = consume(core::token_type::IDENTIFIER, "Expect name after type.");
 
                 if (match({ core::token_type::LEFT_PAREN })) {
                     return func_declaration(type, name);
@@ -150,29 +156,17 @@ ast::func_param parser::parse_param() {
 
     auto name = consume(core::token_type::IDENTIFIER, "Expect parameter name.");
 
-    ast::func_param param;
-    param.type_ = type;
-    param.name_ = name;
+	ast::func_param param{ type, name };
     return param;
 }
 
 parser::stmt_ptr parser::statement() {
-    if (match({ core::token_type::WHILE })) {
-        return while_statement();
-    }
-	if (match({ core::token_type::FOR })) {
-		return for_statement();
-	}
-    if (match({ core::token_type::IF })) {
-        return if_statement();
-    }
-    if (match({ core::token_type::RETURN })) {
-        return return_statement();
-    }
-    if (match({ core::token_type::LEFT_BRACE })) {
-        return block_statement();
-    }
-
+    if (match({ core::token_type::WHILE })) return while_statement();
+	if (match({ core::token_type::FOR })) return for_statement();
+    if (match({ core::token_type::IF })) return if_statement();
+    if (match({ core::token_type::RETURN })) return return_statement();
+    if (match({ core::token_type::LEFT_BRACE })) return block_statement();
+        
     auto expr_ = expression();
     consume(core::token_type::SEMICOLON, "Expect ';' after expression.");
 
@@ -355,7 +349,12 @@ parser::expr_ptr parser::logic_and() {
 parser::expr_ptr parser::assignment() {
     auto expr = logic_or();
 
-    if (match({ core::token_type::EQUAL })) {
+    if (match({ core::token_type::EQUAL,
+               core::token_type::PLUS_EQUAL,
+               core::token_type::MINUS_EQUAL,
+               core::token_type::STAR_EQUAL,
+               core::token_type::SLASH_EQUAL,
+               core::token_type::PERCENT_EQUAL })) {
         core::token op = prev();
         auto value = assignment();
         return make_binary(std::move(expr), op, std::move(value));
@@ -405,7 +404,7 @@ parser::expr_ptr parser::primary() {
     }
 
     if (match({ core::token_type::IDENTIFIER })) {
-        core::token name = prev();
+        auto name = prev();
 
         if (match({ core::token_type::LEFT_PAREN })) {
             return finish_call(name);
@@ -418,7 +417,7 @@ parser::expr_ptr parser::primary() {
         expr->data_ = std::move(*var);
 
 		if (match({ core::token_type::INCREMENT, core::token_type::DECREMENT })) {
-			core::token op = prev();
+			auto op = prev();
 			return postfix_unary(std::move(expr));
 		}
 
@@ -464,4 +463,4 @@ void parser::synchronize() {
     }
 }
 
-} 
+} // namespace parser

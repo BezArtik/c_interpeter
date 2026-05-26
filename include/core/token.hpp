@@ -1,3 +1,10 @@
+// This header defines the token types and 
+// related utilities for the lexer and parser of the language. 
+// It includes definitions for various token types, 
+// a structure to represent tokens, and functions 
+// to look up keywords and determine token properties.
+
+
 #pragma once
 
 #include "core/type.hpp"
@@ -14,6 +21,7 @@ enum class token_type : uint8_t {
     BANG, BANG_EQUAL, EQUAL, EQUAL_EQUAL,
     GREATER, GREATER_EQUAL, LESS, LESS_EQUAL,
 	PERCENT, INCREMENT, DECREMENT,
+	PLUS_EQUAL, MINUS_EQUAL, STAR_EQUAL, SLASH_EQUAL, PERCENT_EQUAL,
 
     IDENTIFIER, STRING, NUMBER,
 
@@ -35,10 +43,10 @@ struct token {
 };
 
 struct keyword_info {
-    std::string_view lexeme;
-    token_type token;
-    std::optional<value_type> type;
-    bool can_start_statement;
+    std::string_view lexeme_;
+    token_type token_;
+    std::optional<value_type> type_;
+    bool can_start_statement_;
 };
 
 inline constexpr std::array keyword_table{
@@ -81,4 +89,4 @@ std::optional<value_type> token_to_value_type(token_type t);
 bool can_start_statement(token_type t);
 bool is_double_literal(std::string_view lexeme);
 
-}
+} // namespace core

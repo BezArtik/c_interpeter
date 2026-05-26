@@ -1,3 +1,8 @@
+// This file defines the various statement types in the AST, 
+// such as variable declarations, 
+// control flow statements, and function declarations.
+
+
 #pragma once
 
 #include "ast/expression.hpp"
@@ -80,4 +85,4 @@ struct statement {
     statement(func_declaration s);
 };
 
-}
+} // namespace ast
