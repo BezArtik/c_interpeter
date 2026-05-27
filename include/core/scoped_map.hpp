@@ -4,6 +4,7 @@
 // that manages a stack of scopes, each containing a 
 // mapping of string keys to values of type T.
 
+
 #pragma once
 #include <string>
 #include <unordered_map>

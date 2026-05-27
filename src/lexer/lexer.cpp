@@ -9,7 +9,8 @@
 
 
 #include "lexer/lexer.hpp"
-#include "core/token.hpp"
+#include "core/token_types.hpp"
+#include "core/keywords.hpp"
 #include "core/error_report.hpp"
 #include <string_view>
 #include <unordered_map>

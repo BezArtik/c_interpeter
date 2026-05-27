@@ -11,7 +11,6 @@
 
 
 #pragma once
-
 #include "core/token.hpp"
 #include "core/scoped_map.hpp"
 #include <string>

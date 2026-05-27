@@ -16,6 +16,8 @@
 #include "ast/statement.hpp"
 #include "core/overloaded.hpp"
 #include "core/builtins.hpp"
+#include "core/token_types.hpp"
+#include "core/keywords.hpp"
 #include "semantics/type_check.hpp"
 #include <stdexcept>
 #include <string>

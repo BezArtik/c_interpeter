@@ -7,7 +7,6 @@
 
 
 #pragma once
-
 #include "core/token.hpp"
 #include <string>
 #include <variant>

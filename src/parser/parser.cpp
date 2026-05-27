@@ -3,6 +3,8 @@
 // This file implements the parser for a programming language.
 
 #include "parser/parser.hpp"
+#include "core/token_types.hpp"
+#include "core/keywords.hpp"
 #include <stdexcept>
 #include <string>
 #include <iostream>

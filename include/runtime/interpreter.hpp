@@ -10,8 +10,6 @@
 
 
 #pragma once
-
-#include "runtime/environment.hpp"
 #include "runtime/value.hpp"
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
@@ -22,6 +20,8 @@
 #include <string>
 
 namespace runtime {
+
+class environment;
 
 struct return_exception {
     value return_value_;

@@ -5,7 +5,7 @@
 
 
 #include "runtime/value.hpp"
-#include "core/token.hpp"
+#include "core/token_types.hpp"
 #include <stdexcept>
 #include <cstdint>
 #include <charconv>

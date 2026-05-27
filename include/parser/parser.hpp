@@ -5,7 +5,6 @@
 
 
 #pragma once
-
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 #include "core/token.hpp"

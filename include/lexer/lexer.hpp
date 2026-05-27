@@ -5,7 +5,6 @@
 
 
 #pragma once
-
 #include "core/token.hpp"
 #include "core/error_report.hpp"
 #include <vector>

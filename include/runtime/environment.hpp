@@ -5,7 +5,6 @@
 
 
 #pragma once
-
 #include "runtime/value.hpp"
 #include "core/scoped_map.hpp"
 #include <string>

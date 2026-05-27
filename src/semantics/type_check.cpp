@@ -7,7 +7,8 @@
 #include "ast/expression.hpp"
 #include "ast/statement.hpp"
 #include "core/overloaded.hpp"
-#include "core/token.hpp"
+#include "core/token_types.hpp"
+#include "core/keywords.hpp"
 #include "core/builtins.hpp"
 #include <string>
 #include <algorithm>

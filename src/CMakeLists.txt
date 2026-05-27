@@ -10,7 +10,7 @@ target_sources(interpreter
         
         core/error_report.cpp 
         
-        core/token.cpp
+        "core/keywords.cpp"
         core/builtins.cpp
 
         semantics/symbol_table.cpp

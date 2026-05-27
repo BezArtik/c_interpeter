@@ -7,6 +7,7 @@
 
 
 #include "core/builtins.hpp"
+#include "core/token_types.hpp"
 #include "runtime/value.hpp"
 #include <cmath>
 #include <iostream>
