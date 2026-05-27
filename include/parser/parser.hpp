@@ -1,3 +1,5 @@
+// parser/parser.hpp
+
 // The parser class is responsible for converting a
 // sequence of tokens into an abstract syntax tree (AST).
 
@@ -8,7 +10,6 @@
 #include "ast/expression.hpp"
 #include "core/token.hpp"
 #include "core/error_report.hpp"
-#include "core/type.hpp"
 #include <vector>
 #include <memory>
 #include <string_view>

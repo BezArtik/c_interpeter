@@ -1,3 +1,5 @@
+// lexer/lexer.hpp
+
 // This file defines the lexer class, which is responsible
 // for converting source code into a sequence of tokens.
 

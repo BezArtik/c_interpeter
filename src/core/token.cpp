@@ -1,4 +1,4 @@
-// token.cpp
+// core/token.cpp
 
 // This file implements the token-related functions declared in token.hpp.
 

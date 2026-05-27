@@ -1,3 +1,5 @@
+// ast/expression.hpp
+
 // This file defines the abstract syntax tree (AST) 
 // nodes for expressions in the language.
 
@@ -50,13 +52,10 @@ struct expression {
         call_expr
     > data_;
 
-    expression();
-    expression(literal_expr e);
-    expression(variable_expr e);
-    expression(binary_expr e);
-    expression(unary_expr e);
-    expression(postfix_expr e);
-    expression(call_expr e);
+    expression() : data_(literal_expr{}) {}
+
+	template <typename T>
+	expression(T e) : data_(std::move(e)) {}
 };
 
 } // namespace ast

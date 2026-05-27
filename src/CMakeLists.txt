@@ -9,13 +9,10 @@ target_sources(interpreter
         parser/parser.cpp
         
         core/error_report.cpp 
-        core/type.cpp
+        
         core/token.cpp
         core/builtins.cpp
 
-        ast/expression.cpp
-        ast/statement.cpp
-        
         semantics/symbol_table.cpp
         semantics/type_check.cpp
         

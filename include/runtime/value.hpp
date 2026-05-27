@@ -1,3 +1,5 @@
+// runtime/value.hpp
+
 // This file defines the runtime value class, 
 // which represents a value in the runtime environment. 
 // It can hold different types of values (int, double, bool, string) 
@@ -6,8 +8,7 @@
 
 #pragma once
 
-
-#include "core/type.hpp"
+#include "core/token.hpp"
 #include <string>
 #include <variant>
 #include <optional>
@@ -21,11 +22,8 @@ public:
 
     value();
 
-    value(int v);
-    value(int64_t v);
-    value(double v);
-    value(bool v);
-    value(std::string v);
+	template <typename T>
+	value(T v) : data_(std::move(v)) {}
 
     core::value_type type() const;
 
@@ -33,10 +31,15 @@ public:
     double to_double() const;
     std::string to_string() const;
 
-    std::optional<int64_t> as_int() const;
-    std::optional<double> as_double() const;
-    std::optional<bool> as_bool() const;
-    std::optional<std::string> as_string() const;
+    template <typename T>
+	std::optional<T> as() const noexcept {
+		if (auto* p = std::get_if<T>(&data_)) return *p;
+		return std::nullopt;
+	}
+    std::optional<int64_t> as_int() const noexcept;
+    std::optional<double> as_double() const noexcept;
+    std::optional<bool> as_bool() const noexcept;
+    std::optional<std::string> as_string() const noexcept;
 
     value add(const value& other) const;
     value sub(const value& other) const;

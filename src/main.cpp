@@ -1,4 +1,4 @@
-// main.cpp
+// src/main.cpp
 
 // This is the main entry point of the interpreter. It reads a source 
 // file, performs lexical analysis, parsing, 
@@ -8,7 +8,6 @@
 
 #include "core/token.hpp"
 #include "core/error_report.hpp"
-#include "core/type.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "ast/statement.hpp"

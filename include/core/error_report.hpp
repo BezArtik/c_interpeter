@@ -1,3 +1,5 @@
+// core/error_report.hpp
+
 // The class provides methods to report errors, 
 // check if any errors have been reported, and clear the error state. 
 // The `error` method takes the line and column number where the error occurred, 

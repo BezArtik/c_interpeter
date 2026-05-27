@@ -1,4 +1,4 @@
-// type_check.cpp
+// semantics/type_check.cpp
 
 // This file implements the type checker for a programming language.
 
@@ -63,7 +63,7 @@ void type_checker::check_expression_stmt(const ast::expression_stmt& stmt) {
 void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
     std::string name_{ stmt.name_.lexeme_ };
 
-    if (symbols_.defined_locally(name_)) {
+    if (symbols_.contains_in_current_scope(name_)) {
         reporter_.error(stmt.name_.line_, stmt.name_.column_,
             "redeclaration of variable '" + name_ + "'");
         return;
@@ -88,11 +88,11 @@ void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
 }
 
 void type_checker::check_block(const ast::block_stmt& stmt) {
-    symbols_.push_scope();
+    symbols_.push();
     for (const auto& s : stmt.statements_) {
         check_statement(*s);
     }
-    symbols_.pop_scope();
+    symbols_.pop();
 }
 
 void type_checker::check_while(const ast::while_stmt& stmt) {
@@ -104,7 +104,7 @@ void type_checker::check_while(const ast::while_stmt& stmt) {
 }
 
 void type_checker::check_for(const ast::for_stmt& stmt) {
-	symbols_.push_scope();
+	symbols_.push();
 	if (stmt.initializer_) {
 		check_statement(*stmt.initializer_);
 	}
@@ -118,7 +118,7 @@ void type_checker::check_for(const ast::for_stmt& stmt) {
 		type_of(*stmt.increment_);
 	}
 	check_statement(*stmt.body_);
-	symbols_.pop_scope();
+	symbols_.pop();
 }
 
 void type_checker::check_if(const ast::if_stmt& stmt) {
@@ -160,7 +160,7 @@ void type_checker::check_return_stmt(const ast::return_stmt& stmt) {
 void type_checker::check_func_declaration(const ast::func_declaration& stmt) {
     std::string name{ stmt.name_.lexeme_ };
 
-    if (symbols_.defined_locally(name)) {
+    if (symbols_.contains_in_current_scope(name)) {
         reporter_.error(stmt.name_.line_, stmt.name_.column_,
             "redeclaration of function '" + name + "'");
         return;
@@ -173,7 +173,7 @@ void type_checker::check_func_declaration(const ast::func_declaration& stmt) {
 
     symbols_.define_function(name, stmt.return_type_, param_types);
 
-    symbols_.push_scope();
+    symbols_.push();
 
     for (const auto& param : stmt.params_) {
         std::string param_name{ param.name_.lexeme_ };
@@ -189,7 +189,7 @@ void type_checker::check_func_declaration(const ast::func_declaration& stmt) {
     }
 
     curr_return_type_ = prev_return_type;
-    symbols_.pop_scope();
+    symbols_.pop();
 }
 
 core::value_type type_checker::type_of(const ast::expression& expr) {
@@ -221,7 +221,7 @@ core::value_type type_checker::type_of_literal(const ast::literal_expr& expr) {
 
 core::value_type type_checker::type_of_variable(const ast::variable_expr& expr_) {
     std::string name_{ expr_.name_.lexeme_ };
-    auto info = symbols_.lookup(name_);
+    auto info = symbols_.get(name_);
     if (!info) {
         reporter_.error(expr_.name_.line_, expr_.name_.column_,
             "undefined variable '" + name_ + "'");
@@ -409,7 +409,7 @@ core::value_type type_checker::type_of_call(const ast::call_expr& expr) {
         return core::value_type::UNKNOWN;
     }
 
-    auto info = symbols_.lookup(name);
+    auto info = symbols_.get(name);
 
     if (!info) {
         reporter_.error(expr.callee_.line_, expr.callee_.column_,

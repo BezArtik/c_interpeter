@@ -1,4 +1,4 @@
-// environment.cpp
+// runtime/environment.cpp
 
 // This code implements the `environment` class, 
 // which manages variable scopes and built-in functions 
@@ -12,51 +12,29 @@
 
 
 #include "runtime/environment.hpp"
+#include <optional>
 #include <stdexcept>
 
 namespace runtime {
 
-environment::environment() {
-    scopes_.push_back(std::make_unique<scope>());
-}
-
 void environment::push_scope() {
-    scopes_.push_back(std::make_unique<scope>());
+    values_.push();
 }
 
 void environment::pop_scope() {
-    if (scopes_.size() > 1) {
-        scopes_.pop_back();
-    }
+    values_.pop();
 }
 
 void environment::define(const std::string& name, value val) {
-    scopes_.back()->values_[name] = std::move(val);
+    values_.define(name, val);
 }
 
 void environment::assign(const std::string& name, value val) {
-	auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
-		[&name](const auto& s) {
-		return s->values_.find(name) != s->values_.end();
-		});
-    if (it != scopes_.rend()) {
-        (*it)->values_.at(name) = std::move(val);
-        return;
-    }
-    throw std::runtime_error("Assignment to undefined variable '" + name + "'");
+    values_.assign(name, val);
 }
 
 std::optional<value> environment::get(const std::string& name) const {
-	auto it = std::find_if(scopes_.rbegin(), scopes_.rend(), 
-        [&name](const auto& s) {
-		return s->values_.find(name) != s->values_.end();
-		});
-    if (it != scopes_.rend()) return (*it)->values_.at(name);
-    return std::nullopt;
-}
-
-bool environment::contains(const std::string& name) const {
-    return get(name).has_value();
+	return values_.get(name);
 }
 
 void environment::define_builtin(const std::string& name, builtin_fn fn) {

@@ -1,22 +1,17 @@
-// value.cpp
+// runtime/value.cpp
 
 // This file implements the value class which represents a runtime value in the interpreter. 
 // It supports various types and operations on them.
 
 
 #include "runtime/value.hpp"
+#include "core/token.hpp"
 #include <stdexcept>
 #include <cstdint>
 
 namespace runtime {
 
 value::value() : data_(std::monostate{}) {}
-
-value::value(int v) : data_(static_cast<int64_t>(v)) {}
-value::value(int64_t v) : data_(v) {}
-value::value(double v) : data_(v) {}
-value::value(bool v) : data_(v) {}
-value::value(std::string v) : data_(std::move(v)) {}
 
 core::value_type value::type() const {
     return std::visit([](auto&& arg) {
@@ -53,32 +48,14 @@ std::string value::to_string() const {
         }, data_);
 }
 
-std::optional<int64_t> value::as_int() const {
-    if (auto* p = std::get_if<int64_t>(&data_)) return *p;
-    return std::nullopt;
-}
-
-std::optional<double> value::as_double() const {
-    if (auto* p = std::get_if<double>(&data_)) return *p;
-    return std::nullopt;
-}
-
-std::optional<bool> value::as_bool() const {
-    if (auto* p = std::get_if<bool>(&data_)) return *p;
-    return std::nullopt;
-}
-
-std::optional<std::string> value::as_string() const {
-    if (auto* p = std::get_if<std::string>(&data_)) return *p;
-    return std::nullopt;
-}
+std::optional<int64_t> value::as_int() const noexcept { return as<int64_t>(); }
+std::optional<double> value::as_double() const noexcept { return as<double>(); }
+std::optional<bool> value::as_bool() const noexcept { return as<bool>();}
+std::optional<std::string> value::as_string() const noexcept { return as<std::string>();}
 
 value value::add(const value& other) const {
     if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
         return value(*as_int() + *other.as_int());
-    }
-    if (type() == core::value_type::STRING && other.type() == core::value_type::STRING) {
-        return value(*as_string() + *other.as_string());
     }
     return value(to_double() + other.to_double());
 }

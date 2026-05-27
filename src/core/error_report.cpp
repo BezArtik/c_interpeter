@@ -1,4 +1,4 @@
-// error_report.cpp
+// core/error_report.cpp
 
 // The error_reporter class provides methods to report errors with specific line and column information, c
 // heck if any errors have been reported, and clear the error state. 

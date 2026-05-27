@@ -1,3 +1,5 @@
+// core/builtins.hpp
+
 // This file defines the built-in functions 
 // available in the language. Each built-in 
 // function is represented by a builtin_def struct, 
@@ -8,7 +10,7 @@
 
 
 #pragma once
-#include "core/type.hpp"
+#include "core/token.hpp"
 #include <string>
 #include <vector>
 #include <functional>

@@ -1,4 +1,4 @@
-// lexer.cpp
+// lexer/lexer.cpp
 
 // This file implements the lexer for a programming language. 
 // The lexer takes a source code string and produces a list of tokens, 

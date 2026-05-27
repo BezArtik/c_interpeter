@@ -1,4 +1,4 @@
-// parser.cpp
+// parser/parser.cpp
 
 // This file implements the parser for a programming language.
 

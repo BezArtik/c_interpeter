@@ -1,3 +1,5 @@
+// ast/statement.hpp
+
 // This file defines the various statement types in the AST, 
 // such as variable declarations, 
 // control flow statements, and function declarations.
@@ -6,7 +8,6 @@
 #pragma once
 
 #include "ast/expression.hpp"
-#include "core/type.hpp"
 #include <vector>
 #include <variant>
 #include <memory>
@@ -74,15 +75,10 @@ struct statement {
         func_declaration
     > data_;
 
-    statement();
-    statement(expression_stmt s);
-    statement(var_declaration s);
-    statement(block_stmt s);
-    statement(while_stmt s);
-	statement(for_stmt s);
-    statement(if_stmt s);
-    statement(return_stmt s);
-    statement(func_declaration s);
+    statement() : data_(expression_stmt{}) {}
+
+	template <typename T>
+	statement(T s) : data_(std::move(s)) {}
 };
 
 } // namespace ast

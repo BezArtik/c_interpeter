@@ -1,3 +1,5 @@
+// runtime/environment.hpp
+
 // The environment class manages variable scopes 
 // and built-in functions for the runtime.
 
@@ -5,7 +7,7 @@
 #pragma once
 
 #include "runtime/value.hpp"
-#include "core/type.hpp"
+#include "core/scoped_map.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -17,29 +19,23 @@
 namespace runtime {
 
 class environment {
-public:
     using builtin_fn = std::function<value(const std::vector<value>&)>;
+public:
 
-    environment();
+    environment() = default;
 
     void push_scope();
-
     void pop_scope();
-
     void define(const std::string& name, value val);
     void assign(const std::string& name, value val);
     std::optional<value> get(const std::string& name) const;
-    bool contains(const std::string& name) const;
 
     void define_builtin(const std::string& name, builtin_fn fn);
     std::optional<builtin_fn> get_builtin(const std::string& name) const;
 
 private:
 
-    struct scope {
-        std::unordered_map<std::string, value> values_;
-    };
-    std::vector<std::unique_ptr<scope>> scopes_;
+    core::scoped_map<value> values_;
     std::unordered_map<std::string, builtin_fn> builtins_;
 };
 

@@ -1,3 +1,5 @@
+// core/token.hpp
+
 // This header defines the token types and 
 // related utilities for the lexer and parser of the language. 
 // It includes definitions for various token types, 
@@ -7,7 +9,6 @@
 
 #pragma once
 
-#include "core/type.hpp"
 #include <cstdint>
 #include <string_view>
 #include <array>
@@ -34,6 +35,14 @@ enum class token_type : uint8_t {
 	UNKNOWN
 };
 
+enum class value_type : uint8_t {
+    INT,
+    DOUBLE,
+    BOOL,
+    STRING,
+    VOID,
+    UNKNOWN
+};
 
 struct token {
     token_type type_;
@@ -50,18 +59,18 @@ struct keyword_info {
 };
 
 inline constexpr std::array keyword_table{
-    keyword_info{"if",      token_type::IF,             std::nullopt,             true},
-    keyword_info{"else",    token_type::ELSE,           std::nullopt,             false},
-    keyword_info{"while",   token_type::WHILE,          std::nullopt,             true},
-    keyword_info{"for",     token_type::FOR,            std::nullopt,             true},
-    keyword_info{"return",  token_type::RETURN,         std::nullopt,             true},
-    keyword_info{"int",     token_type::INT_KEYWORD,    core::value_type::INT,    true},
-    keyword_info{"double",  token_type::DOUBLE_KEYWORD, core::value_type::DOUBLE, true},
-    keyword_info{"bool",    token_type::BOOL_KEYWORD,   core::value_type::BOOL,   true},
-    keyword_info{"string",  token_type::STRING_KEYWORD, core::value_type::STRING, true},
-    keyword_info{"void",    token_type::VOID_KEYWORD,   core::value_type::VOID,   true},
-    keyword_info{"true",    token_type::TRUE,           core::value_type::BOOL,   false},
-    keyword_info{"false",   token_type::FALSE,          core::value_type::BOOL,   false},
+    keyword_info{"if",      token_type::IF,             std::nullopt,       true},
+    keyword_info{"else",    token_type::ELSE,           std::nullopt,       false},
+    keyword_info{"while",   token_type::WHILE,          std::nullopt,       true},
+    keyword_info{"for",     token_type::FOR,            std::nullopt,       true},
+    keyword_info{"return",  token_type::RETURN,         std::nullopt,       true},
+    keyword_info{"int",     token_type::INT_KEYWORD,    value_type::INT,    true},
+    keyword_info{"double",  token_type::DOUBLE_KEYWORD, value_type::DOUBLE, true},
+    keyword_info{"bool",    token_type::BOOL_KEYWORD,   value_type::BOOL,   true},
+    keyword_info{"string",  token_type::STRING_KEYWORD, value_type::STRING, true},
+    keyword_info{"void",    token_type::VOID_KEYWORD,   value_type::VOID,   true},
+    keyword_info{"true",    token_type::TRUE,           value_type::BOOL,   false},
+    keyword_info{"false",   token_type::FALSE,          value_type::BOOL,   false},
 };
 
 inline constexpr std::array type_tokens{
