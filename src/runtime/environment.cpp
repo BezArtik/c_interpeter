@@ -34,7 +34,7 @@ void environment::assign(const std::string& name, value val) {
 }
 
 std::optional<value> environment::get(const std::string& name) const {
-	return values_.get(name);
+    return values_.get(name);
 }
 
 void environment::define_builtin(const std::string& name, builtin_fn fn) {

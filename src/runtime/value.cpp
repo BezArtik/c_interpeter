@@ -8,6 +8,7 @@
 #include "core/token.hpp"
 #include <stdexcept>
 #include <cstdint>
+#include <charconv>
 
 namespace runtime {
 
@@ -27,13 +28,24 @@ core::value_type value::type() const {
 int64_t value::to_int() const {
 	if (auto i = as_int()) return static_cast<int64_t>(*i);
 	if (auto d = as_double()) return static_cast<int64_t>(*d);
-	if (auto s = as_string()) return std::stoll(*s);
+	if (auto s = as_string()) {
+		int64_t result;
+		auto [ptr, ec] = std::from_chars(s->data(), s->data() + s->size(), result);
+		if (ec != std::errc{}) throw std::runtime_error("Cannot convert to int");
+		return result;
+	}
 	throw std::runtime_error("Cannot convert to int");
 }
 
 double value::to_double() const {
     if (auto i = as_int()) return static_cast<double>(*i);
     if (auto d = as_double()) return *d;
+    if (auto s = as_string()) {
+		double result;
+		auto [ptr, ec] = std::from_chars(s->data(), s->data() + s->size(), result);
+		if (ec != std::errc{}) throw std::runtime_error("Cannot convert to double");
+		return result;
+    }
     throw std::runtime_error("Cannot convert to double");
 }
 
@@ -75,6 +87,10 @@ value value::mul(const value& other) const {
 }
 
 value value::div(const value& other) const {
+	if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
+		if (*other.as_int() == 0) throw std::runtime_error("Division by zero");
+		return value(*as_int() / *other.as_int());
+	}
     return value(to_double() / other.to_double());
 }
 

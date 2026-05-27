@@ -70,7 +70,7 @@ void lexer::scan_token() {
 
     case '\n':
         line_++;
-        column_ = 1;
+        column_ = 0;
         break;
 
     case '"': consume_string(); break;

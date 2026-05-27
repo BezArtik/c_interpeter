@@ -244,7 +244,7 @@ core::value_type type_checker::type_of_binary(const ast::binary_expr& expr) {
     core::token_type op = expr.op_.type_;
 
     if (op == core::token_type::EQUAL) {
-        if (!is_assignable(left, right)) {
+        if (!is_assignable(left, right) || !is_lvalue(*expr.left_)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 "type mismatch in assignment");
             return core::value_type::UNKNOWN;

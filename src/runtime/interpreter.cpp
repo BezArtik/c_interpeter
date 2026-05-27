@@ -269,8 +269,7 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
     case core::token_type::GREATER_EQUAL:return left.ge(right);
     case core::token_type::AND:          return left.and_op(right);
     case core::token_type::OR:           return left.or_op(right);
-    default:
-        throw std::runtime_error("Unsupported binary operator");
+    default: throw std::runtime_error("Unsupported binary operator");
     }
 }
 
@@ -344,7 +343,7 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
         throw std::runtime_error("Undefined function '" + name + "'");
     }
 
-    const ast::func_declaration& func = *func_it->second;
+    const auto& func = *func_it->second;
 
     std::vector<value> args;
     args.reserve(expr.args_.size());
@@ -369,10 +368,10 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
         case core::value_type::DOUBLE: result = value(0.0); break;
         case core::value_type::BOOL:   result = value(false); break;
         case core::value_type::STRING: result = value(std::string("")); break;
-        default: result = value();
+		default:                       result = value(); break;
         }
-    } catch (return_exception& ret) {
-        result = std::move(ret.return_value_);
+    } catch (const return_exception& ret) {
+        result = ret.return_value_;
     }
 
     return result;
