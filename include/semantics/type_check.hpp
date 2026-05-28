@@ -10,7 +10,7 @@
 #include <optional>
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
-#include "core/error_report.hpp"
+#include "core/error/error_report.hpp"
 #include "semantics/symbol_table.hpp"
 
 namespace semantics {

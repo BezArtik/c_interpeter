@@ -14,27 +14,35 @@
 #include "runtime/environment.hpp"
 #include "ast/expression.hpp"
 #include "ast/statement.hpp"
-#include "core/overloaded.hpp"
-#include "core/builtins.hpp"
-#include "core/token_types.hpp"
-#include "core/keywords.hpp"
+#include "core/utils/overloaded.hpp"
+#include "core/utils/builtins.hpp"
+#include "core/token/token_types.hpp"
+#include "core/token/keywords.hpp"
+#include "core/error/error_codes.hpp"
 #include "semantics/type_check.hpp"
 #include <stdexcept>
 #include <string>
 #include <iostream>
 #include <cmath>
 #include <iterator>
+#include <charconv>
+#include <utility>
+#include <algorithm>
 
 namespace runtime {
+
+[[noreturn]] void interpreter::error(core::error_code code, size_t line, size_t column, std::string_view msg) {
+	reporter_.error(line, column, code, msg);
+    throw core::interpret_error{ code, line, column };
+}
 
 interpreter::interpreter(core::error_reporter& reporter)
     : reporter_(reporter)
     , global_env_(std::make_unique<environment>())
     , current_env_(global_env_.get()) {
 
-    for (const auto& def : core::builtins()) {
+    for (const auto& def : core::builtins()) 
         global_env_->define_builtin(def.name_, def.impl_);
-    }
 }
 
 interpreter::scope_guard::scope_guard(environment* env) : env_(env) {
@@ -46,11 +54,9 @@ interpreter::scope_guard::~scope_guard() {
 
 void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements) {
     try {
-        for (const auto& stmt : statements) {
-            execute(*stmt);
-        }
-    } catch (const std::runtime_error& e) {
-        reporter_.error(0, 0, e.what());
+        for (const auto& stmt : statements) execute(*stmt);
+    } catch (const core::interpret_error& e) {
+		reporter_.error(e.line_, e.column_, e.code_);
     }
 }
 
@@ -72,7 +78,7 @@ void interpreter::execute_expression_stmt(const ast::expression_stmt& stmt) {
 }
 
 void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
-    std::string name_{ stmt.name_.lexeme_ };
+    std::string name{ stmt.name_.lexeme_ };
 
     auto init_val = [&]() {
         switch (stmt.type_) {
@@ -81,7 +87,7 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
         case core::value_type::BOOL:   return value(false);
         case core::value_type::STRING: return value(std::string(""));
         case core::value_type::VOID:   return value();
-        default: throw std::runtime_error("Unknown variable type");
+		default: error(core::error_code::unknown_type, stmt.name_.line_, stmt.name_.column_);
         }
         }();
 
@@ -93,20 +99,18 @@ void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
         if (init_type == core::value_type::INT && target_type == core::value_type::DOUBLE) {
             init_val = value(static_cast<double>(init.as_int().value()));
         } else if (init_type != target_type) {
-            throw std::runtime_error("Type mismatch in variable initialisation of '" + name_ + "'");
+			error(core::error_code::type_mismatch_initialization, stmt.name_.line_, stmt.name_.column_, name);
         } else {
             init_val = std::move(init);
         }
     }
 
-    current_env_->define(name_, std::move(init_val));
+    current_env_->define(name, std::move(init_val));
 }
 
 void interpreter::execute_block(const ast::block_stmt& stmt) {
     scope_guard guard(current_env_);
-    for (const auto& s : stmt.statements_) {
-        execute(*s);
-    }
+    for (const auto& s : stmt.statements_) execute(*s);
 }
 
 void interpreter::execute_while(const ast::while_stmt& stmt) {
@@ -128,9 +132,7 @@ void interpreter::execute_for(const ast::for_stmt& stmt) {
 			if (!cond.as_bool().value_or(false)) break;
 		}
 		execute(*stmt.body_);
-		if (stmt.increment_) {
-			evaluate(*stmt.increment_);
-		}
+		if (stmt.increment_) evaluate(*stmt.increment_);
 	}
 }
 
@@ -171,9 +173,17 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr) {
     case core::token_type::NUMBER: {
         auto lex = token.lexeme_;
         if (core::is_double_literal(lex)) {
-            return value(std::stod(std::string(lex)));
+			double d;
+			auto [ptr, ec] = std::from_chars(lex.data(), lex.data() + lex.size(), d);
+			if (ec != std::errc()) 
+                error(core::error_code::unexpected_literal, token.line_, token.column_);
+			return value(d);
         } else {
-            return value(static_cast<int64_t>(std::stoll(std::string(lex))));
+			int64_t i;
+			auto [ptr, ec] = std::from_chars(lex.data(), lex.data() + lex.size(), i);
+			if (ec != std::errc()) 
+                error(core::error_code::unexpected_literal, token.line_, token.column_);
+			return value(i);
         }
     }
     case core::token_type::TRUE:
@@ -185,47 +195,39 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr) {
         std::string s{ lex.substr(1, lex.size() - 2) };
         return value(std::move(s));
     }
-    default:
-        throw std::runtime_error("Unexpected literal");
+    default: error(core::error_code::unexpected_literal, token.line_, token.column_);
     }
 }
 
 value interpreter::evaluate_variable(const ast::variable_expr& expr) {
-    std::string name_{ expr.name_.lexeme_ };
-    auto val = current_env_->get(name_);
-    if (!val) {
-        throw std::runtime_error("Undefined variable '" + name_ + "'");
-    }
+    std::string name{ expr.name_.lexeme_ };
+    auto val = current_env_->get(name);
+    if (!val) error(core::error_code::undefined_variable, expr.name_.line_, expr.name_.column_, name);
     return *val;
 }
 
 value interpreter::evaluate_binary(const ast::binary_expr& expr) {
     if (expr.op_.type_ == core::token_type::EQUAL) {
         const auto* var = std::get_if<ast::variable_expr>(&expr.left_->data_);
-        if (!var) {
-            throw std::runtime_error("Invalid assignment target");
-        }
-
+		if (!var) error(core::error_code::invalid_assignment_target, expr.op_.line_, expr.op_.column_);
+            
         std::string name{ var->name_.lexeme_ };
         auto right = evaluate(*expr.right_);
-        current_env_->assign(name, right);
+        if (!current_env_->assign(name, right)) 
+            error(core::error_code::undefined_variable, expr.op_.line_, expr.op_.column_, name);
         return right;
     }
 
     if (expr.op_.type_ == core::token_type::AND) {
         auto left = evaluate(*expr.left_);
-        if (!left.as_bool().value_or(false)) {
-            return value(false);
-        }
+        if (!left.as_bool().value_or(false)) return value(false);
         auto right = evaluate(*expr.right_);
         return value(right.as_bool().value_or(false));
     }
 
     if (expr.op_.type_ == core::token_type::OR) {
         auto left = evaluate(*expr.left_);
-        if (left.as_bool().value_or(false)) {
-            return value(true);
-        }
+        if (left.as_bool().value_or(false)) return value(true);
         auto right = evaluate(*expr.right_);
         return value(right.as_bool().value_or(false));
     }
@@ -240,7 +242,7 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
         std::string name{ var.name_.lexeme_ };
         auto left = evaluate_variable(var);
         auto right = evaluate(*expr.right_);
-        value result;
+        value result{};
 
         switch (expr.op_.type_) {
         case core::token_type::PLUS_EQUAL:  result = left.add(right); break;
@@ -250,7 +252,8 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
         case core::token_type::PERCENT_EQUAL: result = left.mod(right); break;
         }
 
-        current_env_->assign(name, result);
+        if (!current_env_->assign(name, result)) 
+            error(core::error_code::undefined_variable, expr.op_.line_, expr.op_.column_, name);
         return result;
     }
 
@@ -271,7 +274,7 @@ value interpreter::evaluate_binary(const ast::binary_expr& expr) {
     case core::token_type::GREATER_EQUAL:return left.ge(right);
     case core::token_type::AND:          return left.and_op(right);
     case core::token_type::OR:           return left.or_op(right);
-    default: throw std::runtime_error("Unsupported binary operator");
+    default: error(core::error_code::unsupported_binary_operator, expr.op_.line_, expr.op_.column_);
     }
 }
 
@@ -285,7 +288,7 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr) {
         } else if (operand.type() == core::value_type::DOUBLE) {
             return value(-operand.as_double().value());
         }
-        throw std::runtime_error("Unary minus requires numeric operand");
+		error(core::error_code::unary_minus_requires_numeric, expr.op_.line_, expr.op_.column_);
     }
     case core::token_type::BANG: {
         return operand.not_op();
@@ -303,11 +306,11 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr) {
             auto v = old_val.as_double().value();
             new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1.0 : v - 1.0);
         }
-        current_env_->assign(name, new_val);
+        if (!current_env_->assign(name, new_val)) 
+            error(core::error_code::undefined_variable, expr.op_.line_, expr.op_.column_, name);
         return new_val;
     }
-    default:
-        throw std::runtime_error("Unsupported unary operator");
+    default: error(core::error_code::unsupported_unary_operator, expr.op_.line_, expr.op_.column_);
     }
 }
 
@@ -315,7 +318,7 @@ value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
     const auto& var = std::get<ast::variable_expr>(expr.operand_->data_);
     std::string name{ var.name_.lexeme_ };
     auto old_val = evaluate_variable(var);
-    value new_val;
+    value new_val{};
     if (old_val.type() == core::value_type::INT) {
         auto v = old_val.as_int().value();
         new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
@@ -323,7 +326,9 @@ value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
         auto v = old_val.as_double().value();
         new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1.0 : v - 1.0);
     }
-    current_env_->assign(name, new_val);
+    if (!current_env_->assign(name, new_val)) 
+        error(core::error_code::undefined_variable, expr.op_.line_, expr.op_.column_, name);
+    
     return old_val;
 }
 
@@ -334,24 +339,22 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
     if (builtin) {
         std::vector<value> args;
 		args.reserve(expr.args_.size());
-        for (const auto& arg : expr.args_) {
-            args.push_back(evaluate(*arg));
-        }
+		std::transform(expr.args_.begin(), expr.args_.end(), std::back_inserter(args),
+			[this](const auto& arg) { return evaluate(*arg); });
         return (*builtin)(args);
     }
 
     auto func_it = functions_.find(name);
-    if (func_it == functions_.end()) {
-        throw std::runtime_error("Undefined function '" + name + "'");
-    }
+    if (func_it == functions_.end()) 
+		error(core::error_code::undefined_function, expr.callee_.line_, expr.callee_.column_, name);
+    
 
     const auto& func = *func_it->second;
 
     std::vector<value> args;
     args.reserve(expr.args_.size());
-    for (const auto& arg : expr.args_) {
-        args.push_back(evaluate(*arg));
-    }
+	std::transform(expr.args_.begin(), expr.args_.end(), std::back_inserter(args), 
+        [this](const auto& arg) { return evaluate(*arg); });
 
     scope_guard guard(current_env_);
 
@@ -359,12 +362,10 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
         std::string param_name{ func.params_[i].name_.lexeme_ };
         current_env_->define(param_name, std::move(args[i]));
     }
-
-    value result;
+    
+    value result{};
     try {
-        for (const auto& s : func.body_->statements_) {
-            execute(*s);
-        }
+        for (const auto& s : func.body_->statements_) execute(*s);
         switch (func.return_type_) {
         case core::value_type::INT:    result = value(0); break;
         case core::value_type::DOUBLE: result = value(0.0); break;

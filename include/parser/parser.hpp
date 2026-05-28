@@ -7,8 +7,8 @@
 #pragma once
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
-#include "core/token.hpp"
-#include "core/error_report.hpp"
+#include "core/token/token.hpp"
+#include "core/error/error_report.hpp"
 #include <vector>
 #include <memory>
 #include <string_view>
@@ -17,13 +17,11 @@
 namespace parser {
 
 class parser {
-    using stmt_ptr = std::unique_ptr<ast::statement>;
-    using expr_ptr = std::unique_ptr<ast::expression>;
 public:
 
     parser(const std::vector<core::token>& tokens, core::error_reporter& reporter);
 
-    std::vector<stmt_ptr> parse();
+    std::vector<ast::stmt_ptr> parse();
 
 private:
     const core::token& advance() noexcept;
@@ -32,38 +30,40 @@ private:
     bool is_at_end() const noexcept;
     bool check(core::token_type type) const noexcept;
     bool match(std::initializer_list<core::token_type> types) noexcept;
-    const core::token& consume(core::token_type type, std::string_view msg);
+    const core::token& consume(core::token_type type, core::error_code code);
 
-    stmt_ptr declaration();
-    stmt_ptr statement();
-    stmt_ptr var_declaration(core::value_type type, const core::token& name);
-    stmt_ptr func_declaration(core::value_type return_type, const core::token& name);
-    stmt_ptr while_statement();
-	stmt_ptr for_statement();
-    stmt_ptr if_statement();
-    stmt_ptr block_statement();
-    stmt_ptr return_statement();
+    ast::stmt_ptr declaration();
+    ast::stmt_ptr statement();
+    ast::stmt_ptr var_declaration(core::value_type type, const core::token& name);
+    ast::stmt_ptr func_declaration(core::value_type return_type, const core::token& name);
+    ast::stmt_ptr while_statement();
+	ast::stmt_ptr for_statement();
+    ast::stmt_ptr if_statement();
+    ast::stmt_ptr block_statement();
+    ast::stmt_ptr return_statement();
 
-    expr_ptr make_binary(expr_ptr left, core::token op, expr_ptr right);
-    expr_ptr parse_binary(
+    ast::expr_ptr make_binary(ast::expr_ptr left, core::token op, ast::expr_ptr right);
+    ast::expr_ptr parse_binary(
         std::initializer_list<core::token_type> operators,
-        std::function<expr_ptr()> sub_parser);
-    expr_ptr expression();
-    expr_ptr equality();
-    expr_ptr assignment();
-    expr_ptr logic_or();
-    expr_ptr logic_and();
-    expr_ptr comparison();
-    expr_ptr term();
-    expr_ptr factor();
-    expr_ptr unary();
+        std::function<ast::expr_ptr()> sub_parser);
+    ast::expr_ptr expression();
+    ast::expr_ptr equality();
+    ast::expr_ptr assignment();
+    ast::expr_ptr logic_or();
+    ast::expr_ptr logic_and();
+    ast::expr_ptr comparison();
+    ast::expr_ptr term();
+    ast::expr_ptr factor();
+    ast::expr_ptr unary();
 
-	expr_ptr postfix_unary(expr_ptr operand);
-    expr_ptr primary();
-    expr_ptr finish_call(const core::token& callee);
+	ast::expr_ptr postfix_unary(ast::expr_ptr operand);
+    ast::expr_ptr primary();
+    ast::expr_ptr finish_call(const core::token& callee);
 
     ast::func_param parse_param();
     void synchronize();
+
+	[[noreturn]] void error(const core::token& token, core::error_code code);
 
     const std::vector<core::token>& tokens_;
     core::error_reporter& reporter_;

@@ -5,8 +5,8 @@
 
 
 #pragma once
-#include "core/token.hpp"
-#include "core/error_report.hpp"
+#include "core/token/token.hpp"
+#include "core/error/error_report.hpp"
 #include <vector>
 #include <string_view>
 

@@ -29,8 +29,8 @@ void environment::define(const std::string& name, value val) {
     values_.define(name, val);
 }
 
-void environment::assign(const std::string& name, value val) {
-    values_.assign(name, val);
+bool environment::assign(const std::string& name, value val) {
+    return values_.assign(name, val);
 }
 
 std::optional<value> environment::get(const std::string& name) const {

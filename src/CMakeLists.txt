@@ -8,9 +8,8 @@ target_sources(interpreter
         
         parser/parser.cpp
         
-        core/error_report.cpp 
-        
-        "core/keywords.cpp"
+        core/error_report.cpp
+        core/keywords.cpp
         core/builtins.cpp
 
         semantics/symbol_table.cpp
@@ -19,7 +18,7 @@ target_sources(interpreter
         runtime/value.cpp
         runtime/environment.cpp
         runtime/interpreter.cpp
-)
+ )
 
 target_include_directories(interpreter
     PUBLIC

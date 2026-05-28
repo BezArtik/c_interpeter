@@ -13,7 +13,7 @@
 #include "runtime/value.hpp"
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
-#include "core/error_report.hpp"
+#include "core/error/error_report.hpp"
 #include <memory>
 #include <vector>
 #include <unordered_map>
@@ -52,6 +52,9 @@ private:
     value evaluate_unary(const ast::unary_expr& expr);
 	value evaluate_postfix(const ast::postfix_expr& expr);
     value evaluate_call(const ast::call_expr& expr);
+
+	[[noreturn]] void error(core::error_code code, 
+        size_t line = 0, size_t column = 0, std::string_view msg = {});
 
     core::error_reporter& reporter_;
     std::unique_ptr<environment> global_env_;

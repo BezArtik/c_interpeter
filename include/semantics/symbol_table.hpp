@@ -11,8 +11,8 @@
 
 
 #pragma once
-#include "core/token.hpp"
-#include "core/scoped_map.hpp"
+#include "core/token/token.hpp"
+#include "core/utils/scoped_map.hpp"
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -29,15 +29,15 @@ enum class symbol_kind : uint8_t {
 };
 
 struct func_info {
-	core::value_type return_type_;
-	std::vector<core::value_type> param_types_;
+	core::value_type return_type_{};
+	std::vector<core::value_type> param_types_{};
 };
 
 struct symbol_info {
-	core::value_type type_;
-	symbol_kind kind_;
-	bool initialized_;
-	std::vector<core::value_type> param_types_;
+	core::value_type type_{};
+	symbol_kind kind_{};
+	bool initialized_{};
+	std::vector<core::value_type> param_types_{};
 };
 
 class symbol_table : public core::scoped_map<symbol_info> {

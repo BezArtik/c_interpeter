@@ -46,14 +46,14 @@ public:
         return scopes_.back()->bindings_.contains(name);
     }
 
-    void assign(const std::string& name, T value) {
+    bool assign(const std::string& name, T value) {
         auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
             [&](const auto& s) { return s->bindings_.contains(name); });
 		if (it != scopes_.rend()) {
 			(*it)->bindings_[name] = std::move(value);
-			return;
+			return true;
 		}
-        throw std::runtime_error("Assignment to undefined '" + name + "'");
+        return false;
     }
 
     void update_if_exists(const std::string& name, std::function<void(T&)> updater) {

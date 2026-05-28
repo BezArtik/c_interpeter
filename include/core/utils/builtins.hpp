@@ -10,7 +10,7 @@
 
 
 #pragma once
-#include "core/token.hpp"
+#include "core/token/token.hpp"
 #include <string>
 #include <vector>
 #include <functional>

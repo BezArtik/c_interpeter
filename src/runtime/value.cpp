@@ -5,7 +5,8 @@
 
 
 #include "runtime/value.hpp"
-#include "core/token_types.hpp"
+#include "core/token/token_types.hpp"
+#include "core/error/error_codes.hpp"
 #include <stdexcept>
 #include <cstdint>
 #include <charconv>
@@ -31,10 +32,10 @@ int64_t value::to_int() const {
 	if (auto s = as_string()) {
 		int64_t result;
 		auto [ptr, ec] = std::from_chars(s->data(), s->data() + s->size(), result);
-		if (ec != std::errc{}) throw std::runtime_error("Cannot convert to int");
+		if (ec == std::errc{}) throw core::interpret_error{core::error_code::invalid_conversion};
 		return result;
 	}
-	throw std::runtime_error("Cannot convert to int");
+	throw core::interpret_error{core::error_code::invalid_conversion};
 }
 
 double value::to_double() const {
@@ -43,10 +44,10 @@ double value::to_double() const {
     if (auto s = as_string()) {
 		double result;
 		auto [ptr, ec] = std::from_chars(s->data(), s->data() + s->size(), result);
-		if (ec != std::errc{}) throw std::runtime_error("Cannot convert to double");
+		if (ec != std::errc{}) throw core::interpret_error{core::error_code::invalid_conversion};
 		return result;
     }
-    throw std::runtime_error("Cannot convert to double");
+    throw core::interpret_error{core::error_code::invalid_conversion};
 }
 
 std::string value::to_string() const {
@@ -88,7 +89,7 @@ value value::mul(const value& other) const {
 
 value value::div(const value& other) const {
 	if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
-		if (*other.as_int() == 0) throw std::runtime_error("Division by zero");
+		if (*other.as_int() == 0) throw core::interpret_error{core::error_code::division_by_zero};
 		return value(*as_int() / *other.as_int());
 	}
     return value(to_double() / other.to_double());
@@ -96,10 +97,10 @@ value value::div(const value& other) const {
 
 value value::mod(const value& other) const {
     if (type() == core::value_type::INT && other.type() == core::value_type::INT) {
-        if (*other.as_int() == 0) throw std::runtime_error("Modulo by zero");
+        if (*other.as_int() == 0) throw core::interpret_error{core::error_code::modulo_by_zero};
         return value(*as_int() % *other.as_int());
     }
-    throw std::runtime_error("Modulo supported only for integers");
+    throw core::interpret_error{core::error_code::modulo_requires_int};
 }
 
 value value::eq(const value& other) const {
@@ -122,10 +123,10 @@ value value::neq(const value& other) const {
 }
 
 value value::lt(const value& other) const {
-    if (type() != other.type()) throw std::runtime_error("Type mismatch in comparison");
+    if (type() != other.type()) throw core::interpret_error{core::error_code::type_mismatch_assignment};
     if (auto i = as_int()) return value(*i < *other.as_int());
     if (auto d = as_double()) return value(*d < *other.as_double());
-    throw std::runtime_error("Comparison supported only for numeric types");
+    throw core::interpret_error{core::error_code::comparison_requires_numeric};
 }
 
 value value::le(const value& other) const {
@@ -144,19 +145,19 @@ value value::and_op(const value& other) const {
     if (auto b1 = as_bool()) {
         if (auto b2 = other.as_bool()) return value(*b1 && *b2);
     }
-    throw std::runtime_error("Logical AND requires boolean operands");
+	throw core::interpret_error{ core::error_code::logical_requires_bool };
 }
 
 value value::or_op(const value& other) const {
     if (auto b1 = as_bool()) {
         if (auto b2 = other.as_bool()) return value(*b1 || *b2);
     }
-    throw std::runtime_error("Logical OR requires boolean operands");
+    throw core::interpret_error{core::error_code::logical_requires_bool};
 }
 
 value value::not_op() const {
     if (auto b = as_bool()) return value(!*b);
-    throw std::runtime_error("Logical NOT requires boolean operand");
+    throw core::interpret_error{core::error_code::logical_requires_bool};
 }
 
 

@@ -5,7 +5,7 @@
 
 
 #pragma once
-#include "core/token.hpp"
+#include "core/token/token.hpp"
 
 namespace core {
 

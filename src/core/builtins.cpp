@@ -6,8 +6,8 @@
 // return type, and implementation.
 
 
-#include "core/builtins.hpp"
-#include "core/token_types.hpp"
+#include "core/utils/builtins.hpp"
+#include "core/token/token_types.hpp"
 #include "runtime/value.hpp"
 #include <cmath>
 #include <iostream>

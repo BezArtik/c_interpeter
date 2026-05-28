@@ -9,9 +9,10 @@
 
 
 #include "lexer/lexer.hpp"
-#include "core/token_types.hpp"
-#include "core/keywords.hpp"
-#include "core/error_report.hpp"
+#include "core/token/token_types.hpp"
+#include "core/token/keywords.hpp"
+#include "core/error/error_report.hpp"
+#include "core/error/error_codes.hpp"
 #include <string_view>
 #include <unordered_map>
 #include <cctype>
@@ -33,7 +34,7 @@ std::vector<core::token> lexer::scan_tokens() {
 }
 
 void lexer::scan_token() {
-    char c = advance();
+    auto c = advance();
     switch (c) {
     case '(': add_token(core::token_type::LEFT_PAREN); break;
     case ')': add_token(core::token_type::RIGHT_PAREN); break;
@@ -82,7 +83,7 @@ void lexer::scan_token() {
         } else if (std::isalpha(c) || c == '_') {
             consume_identifier();
         } else {
-            reporter_.error(line_, column_, "Unexpected character.");
+			reporter_.error(line_, column_, core::error_code::unexpected_character, c);
         }
         break;
     }
@@ -91,8 +92,7 @@ void lexer::scan_token() {
 void lexer::consume_identifier() {
     while (std::isalnum(peek()) || peek() == '_') advance();
 
-    std::string_view lexeme = source_.substr(start_, current_ - start_);
-
+    auto lexeme = source_.substr(start_, current_ - start_);
     auto kw = core::lookup_keyword(lexeme);
     kw ? add_token(*kw) : add_token(core::token_type::IDENTIFIER);
 }
@@ -118,7 +118,7 @@ void lexer::consume_string() {
     }
 
     if (is_at_end()) {
-        reporter_.error(line_, column_, "Unterminated string.");
+        reporter_.error(line_, column_, core::error_code::unterminated_string);
         return;
     }
 
@@ -153,7 +153,7 @@ bool lexer::is_at_end() const noexcept {
 }
 
 void lexer::add_token(core::token_type type) {
-    std::string_view text = source_.substr(start_, current_ - start_);
+    auto text = source_.substr(start_, current_ - start_);
     tokens_.push_back({ type, text, line_, column_ });
 }
 

@@ -6,8 +6,8 @@
 // It also handles errors at each stage and reports them to the user.
 
 
-#include "core/token.hpp"
-#include "core/error_report.hpp"
+#include "core/token/token.hpp"
+#include "core/error/error_report.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "ast/statement.hpp"
@@ -45,7 +45,7 @@ int main(int argc, char* argv[]) {
         buffer << file.rdbuf();
         std::string source = buffer.str();
 
-        core::error_reporter reporter;
+        core::error_reporter reporter(source);
         lexer::lexer lex(source, reporter);
         auto tokens = lex.scan_tokens();
         if (reporter.has_error()) {

@@ -21,7 +21,7 @@ void symbol_table::define_function(const std::string& name, core::value_type ret
 }
 
 void symbol_table::mark_initialized(const std::string& name) {
-    update_if_exists(name, [](symbol_info& info) {
+    update_if_exists(name, [](auto& info) {
         info.initialized_ = true;
         });
 }
