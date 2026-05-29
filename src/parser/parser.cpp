@@ -105,17 +105,17 @@ ast::stmt_ptr parser::var_declaration(core::value_type type, const core::token& 
 
     consume(core::token_type::SEMICOLON, core::error_code::expected_semicolon);
 
-	auto decl = std::make_unique<ast::var_declaration>(type, name, std::move(initializer));
-	auto stmt = std::make_unique<ast::statement>(std::move(*decl));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::var_declaration(type, name, std::move(initializer))
+    );
 }
 
 ast::stmt_ptr parser::func_declaration(core::value_type return_type, const core::token& name) {
-    auto func = std::make_unique<ast::func_declaration>(return_type, name);
+    ast::func_declaration func(return_type, name);
 
     if (!check(core::token_type::RIGHT_PAREN)) {
         do {
-            func->params_.push_back(parse_param());
+            func.params_.push_back(parse_param());
         } while (match({ core::token_type::COMMA }));
     }
 
@@ -125,10 +125,9 @@ ast::stmt_ptr parser::func_declaration(core::value_type return_type, const core:
     auto body = block_statement();
 
     auto& block = std::get<ast::block_stmt>(body->data_);
-    func->body_ = std::make_unique<ast::block_stmt>(std::move(block));
+    func.body_ = std::make_unique<ast::block_stmt>(std::move(block));
 
-    auto stmt = std::make_unique<ast::statement>(std::move(*func));
-    return stmt;
+    return std::make_unique<ast::statement>(std::move(func));
 }
 
 ast::func_param parser::parse_param() {
@@ -162,9 +161,9 @@ ast::stmt_ptr parser::statement() {
     auto expr_ = expression();
     consume(core::token_type::SEMICOLON, core::error_code::expected_semicolon);
 
-    auto expr_stmt = std::make_unique<ast::expression_stmt>(std::move(expr_), prev().line_, prev().column_);
-    auto stmt = std::make_unique<ast::statement>(std::move(*expr_stmt));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::expression_stmt(std::move(expr_), prev().line_, prev().column_)
+    );
 }
 
 ast::stmt_ptr parser::while_statement() {
@@ -173,10 +172,9 @@ ast::stmt_ptr parser::while_statement() {
     consume(core::token_type::RIGHT_PAREN, core::error_code::expected_right_paren_condition);
 
     auto body_ = statement();
-    auto while_stmt = std::make_unique<ast::while_stmt>(
-        std::move(condition_), std::move(body_), prev().line_, prev().column_);
-    auto stmt = std::make_unique<ast::statement>(std::move(*while_stmt));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::while_stmt(std::move(condition_), std::move(body_), prev().line_, prev().column_)
+    );
 }
 
 ast::stmt_ptr parser::for_statement() {
@@ -205,11 +203,11 @@ ast::stmt_ptr parser::for_statement() {
     consume(core::token_type::RIGHT_PAREN, core::error_code::expected_right_paren);
 
     auto body = statement();
-	auto for_stmt = std::make_unique<ast::for_stmt>(
-		std::move(initializer), std::move(condition), std::move(increment), std::move(body),
-		prev().line_, prev().column_);
-    auto stmt = std::make_unique<ast::statement>(std::move(*for_stmt));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::for_stmt(std::move(initializer), std::move(condition), 
+                      std::move(increment), std::move(body),
+                      prev().line_, prev().column_)
+    );
 }
 
 ast::stmt_ptr parser::if_statement() {
@@ -222,10 +220,10 @@ ast::stmt_ptr parser::if_statement() {
 
     if (match({ core::token_type::ELSE })) else_branch = statement();
         
-    auto if_stmt = std::make_unique<ast::if_stmt>(
-        std::move(condition), std::move(then_branch), std::move(else_branch), prev().line_, prev().column_);
-    auto stmt = std::make_unique<ast::statement>(std::move(*if_stmt));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::if_stmt(std::move(condition), std::move(then_branch), 
+                     std::move(else_branch), prev().line_, prev().column_)
+    );
 }
 
 ast::stmt_ptr parser::return_statement() {
@@ -236,29 +234,25 @@ ast::stmt_ptr parser::return_statement() {
 
     consume(core::token_type::SEMICOLON, core::error_code::expected_semicolon);
 
-    auto ret = std::make_unique<ast::return_stmt>(keyword, std::move(value));
-    auto stmt = std::make_unique<ast::statement>(std::move(*ret));
-    return stmt;
+    return std::make_unique<ast::statement>(
+        ast::return_stmt(keyword, std::move(value))
+    );
 }
 
 ast::stmt_ptr parser::block_statement() {
-    auto block = std::make_unique<ast::block_stmt>();
-
+    ast::block_stmt block;
     while (!check(core::token_type::RIGHT_BRACE) && !is_at_end()) {
         auto stmt = declaration();
-        if (stmt) block->statements_.push_back(std::move(stmt));
+        if (stmt) block.statements_.push_back(std::move(stmt));
     }
-
     consume(core::token_type::RIGHT_BRACE, core::error_code::expected_right_brace);
-
-    auto stmt = std::make_unique<ast::statement>(std::move(*block));
-    return stmt;
+    return std::make_unique<ast::statement>(std::move(block));
 }
 
 ast::expr_ptr parser::make_binary(ast::expr_ptr left, core::token op, ast::expr_ptr right) {
-    auto binary = std::make_unique<ast::binary_expr>(std::move(left), op, std::move(right), op.line_, op.column_);
-    auto expr = std::make_unique<ast::expression>(std::move(*binary));
-    return expr;
+    return std::make_unique<ast::expression>(
+        ast::binary_expr(std::move(left), op, std::move(right), op.line_, op.column_)
+    );
 }
 
 ast::expr_ptr parser::parse_binary(
@@ -332,9 +326,9 @@ ast::expr_ptr parser::unary() {
                 core::token_type::INCREMENT, core::token_type::DECREMENT })) {
         const auto& op = prev();
         auto operand = unary();
-        auto unary_expr = std::make_unique<ast::unary_expr>(op, std::move(operand), op.line_, op.column_);
-        auto new_expr = std::make_unique<ast::expression>(std::move(*unary_expr));
-        return new_expr;
+        return std::make_unique<ast::expression>(
+            ast::unary_expr(op, std::move(operand), op.line_, op.column_)
+        );
     }
 
     return primary();
@@ -342,17 +336,17 @@ ast::expr_ptr parser::unary() {
 
 ast::expr_ptr parser::postfix_unary(ast::expr_ptr operand) {
     const auto& op = prev();
-    auto postfix = std::make_unique<ast::postfix_expr>(std::move(operand), op, op.line_, op.column_);
-    auto expr = std::make_unique<ast::expression>(std::move(*postfix));
-    return expr;
+    return std::make_unique<ast::expression>(
+        ast::postfix_expr(std::move(operand), op, op.line_, op.column_)
+    );
 }
 
 ast::expr_ptr parser::primary() {
     if (match({ core::token_type::NUMBER, core::token_type::STRING,
                 core::token_type::TRUE, core::token_type::FALSE })) {
-        auto lit = std::make_unique<ast::literal_expr>(prev(), prev().line_, prev().column_);
-        auto expr = std::make_unique<ast::expression>(std::move(*lit));
-        return expr;
+        return std::make_unique<ast::expression>(
+            ast::literal_expr(prev(), prev().line_, prev().column_)
+        );
     }
 
     if (match({ core::token_type::IDENTIFIER })) {
@@ -360,8 +354,9 @@ ast::expr_ptr parser::primary() {
 
         if (match({ core::token_type::LEFT_PAREN })) return finish_call(name);
 
-        auto var = std::make_unique<ast::variable_expr>(name, name.line_, name.column_);
-        auto expr = std::make_unique<ast::expression>(std::move(*var));
+        auto expr = std::make_unique<ast::expression>(
+            ast::variable_expr(name, name.line_, name.column_)
+        );
 
         if (match({ core::token_type::INCREMENT, core::token_type::DECREMENT })) {
             const auto& op = prev();
@@ -381,19 +376,17 @@ ast::expr_ptr parser::primary() {
 }
 
 ast::expr_ptr parser::finish_call(const core::token& callee) {
-    auto call = std::make_unique<ast::call_expr>(callee, 
-        std::vector<ast::expr_ptr>(), callee.line_, callee.column_);
+    ast::call_expr call(callee, std::vector<ast::expr_ptr>(), callee.line_, callee.column_);
 
     if (!check(core::token_type::RIGHT_PAREN)) {
         do {
-            call->args_.push_back(expression());
+            call.args_.push_back(expression());
         } while (match({ core::token_type::COMMA }));
     }
 
     consume(core::token_type::RIGHT_PAREN, core::error_code::expected_right_paren);
 
-    auto expr = std::make_unique<ast::expression>(std::move(*call));
-    return expr;
+    return std::make_unique<ast::expression>(std::move(call));
 }
 
 void parser::synchronize() {
