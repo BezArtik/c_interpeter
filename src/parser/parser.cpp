@@ -382,7 +382,7 @@ ast::expr_ptr parser::primary() {
 
 ast::expr_ptr parser::finish_call(const core::token& callee) {
     auto call = std::make_unique<ast::call_expr>(callee, 
-        std::vector<std::unique_ptr<ast::expression>>(), callee.line_, callee.column_);
+        std::vector<ast::expr_ptr>(), callee.line_, callee.column_);
 
     if (!check(core::token_type::RIGHT_PAREN)) {
         do {

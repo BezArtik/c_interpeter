@@ -173,13 +173,13 @@ value interpreter::evaluate_literal(const ast::literal_expr& expr) {
     case core::token_type::NUMBER: {
         auto lex = token.lexeme_;
         if (core::is_double_literal(lex)) {
-			double d;
+            double d{};
 			auto [ptr, ec] = std::from_chars(lex.data(), lex.data() + lex.size(), d);
 			if (ec != std::errc()) 
                 error(core::error_code::unexpected_literal, token.line_, token.column_);
 			return value(d);
         } else {
-			int64_t i;
+            int64_t i{};
 			auto [ptr, ec] = std::from_chars(lex.data(), lex.data() + lex.size(), i);
 			if (ec != std::errc()) 
                 error(core::error_code::unexpected_literal, token.line_, token.column_);
@@ -358,9 +358,9 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
 
     scope_guard guard(current_env_);
 
-    for (size_t i = 0; i < func.params_.size(); i++) {
-        std::string param_name{ func.params_[i].name_.lexeme_ };
-        current_env_->define(param_name, std::move(args[i]));
+    for (auto& params : func.params_) {
+        std::string param_name{ params.name_.lexeme_ };
+        current_env_->define(param_name, std::move(params));
     }
     
     value result{};

@@ -61,10 +61,10 @@ void type_checker::check_expression_stmt(const ast::expression_stmt& stmt) {
 }
 
 void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
-    std::string name_{ stmt.name_.lexeme_ };
+    std::string name{ stmt.name_.lexeme_ };
 
-    if (symbols_.contains_in_current_scope(name_)) {
-		reporter_.error(stmt.name_.line_, stmt.name_.column_, core::error_code::redeclaration_variable, name_);
+    if (symbols_.contains_in_current_scope(name)) {
+		reporter_.error(stmt.name_.line_, stmt.name_.column_, core::error_code::redeclaration_variable, name);
         return;
     }
 
@@ -74,20 +74,18 @@ void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
             
         if (!is_assignable(stmt.type_, init_type)) {
             reporter_.error(stmt.name_.line_, stmt.name_.column_,
-                core::error_code::type_mismatch_initialization, name_);
+                core::error_code::type_mismatch_initialization, name);
             return;
         }
     }
 
-    symbols_.define(name_, stmt.type_);
-    if (stmt.initializer_) symbols_.mark_initialized(name_);
+    symbols_.define(name, stmt.type_);
+    if (stmt.initializer_) symbols_.mark_initialized(name);
 }
 
 void type_checker::check_block(const ast::block_stmt& stmt) {
     symbols_.push();
-    for (const auto& s : stmt.statements_) {
-        check_statement(*s);
-    }
+    for (const auto& s : stmt.statements_) check_statement(*s);
     symbols_.pop();
 }
 
@@ -211,11 +209,11 @@ core::value_type type_checker::type_of_literal(const ast::literal_expr& expr) {
 }
 
 core::value_type type_checker::type_of_variable(const ast::variable_expr& expr_) {
-    std::string name_{ expr_.name_.lexeme_ };
-    auto info = symbols_.get(name_);
+    std::string name{ expr_.name_.lexeme_ };
+    auto info = symbols_.get(name);
     if (!info) {
         reporter_.error(expr_.name_.line_, expr_.name_.column_,
-            core::error_code::undefined_variable, name_);
+            core::error_code::undefined_variable, name);
         return core::value_type::UNKNOWN;
     }
     return info->type_;
@@ -403,7 +401,7 @@ core::value_type type_checker::type_of_call(const ast::call_expr& expr) {
     }
 
     for (size_t i = 0; i < expr.args_.size(); i++) {
-        core::value_type arg_type = type_of(*expr.args_[i]);
+        auto arg_type = type_of(*expr.args_[i]);
         if (arg_type == core::value_type::UNKNOWN) {
             return core::value_type::UNKNOWN;
         }
