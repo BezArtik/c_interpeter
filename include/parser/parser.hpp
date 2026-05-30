@@ -34,8 +34,8 @@ private:
 
     ast::stmt_ptr declaration();
     ast::stmt_ptr statement();
-    ast::stmt_ptr var_declaration(core::value_type type, const core::token& name);
-    ast::stmt_ptr func_declaration(core::value_type return_type, const core::token& name);
+    ast::stmt_ptr var_declaration(core::type type, const core::token& name);
+    ast::stmt_ptr func_declaration(core::type return_type, const core::token& name);
     ast::stmt_ptr while_statement();
 	ast::stmt_ptr for_statement();
     ast::stmt_ptr if_statement();

@@ -5,13 +5,14 @@
 
 
 #pragma once
-#include <memory>
-#include <vector>
-#include <optional>
 #include "ast/statement.hpp"
 #include "ast/expression.hpp"
 #include "core/error/error_report.hpp"
 #include "semantics/symbol_table.hpp"
+#include <memory>
+#include <vector>
+#include <optional>
+
 
 namespace semantics {
 
@@ -19,13 +20,12 @@ class type_checker {
 public:
     type_checker(core::error_reporter& reporter);
 
-    bool check(const std::vector<std::unique_ptr<ast::statement>>& statements);
+    bool check(const std::vector<ast::stmt_ptr>& statements);
 
 private:
 
     void register_builtins();
 
-    static bool is_assignable(core::value_type target, core::value_type source) noexcept;
     void check_statement(const ast::statement& stmt);
     void check_expression_stmt(const ast::expression_stmt& stmt);
     void check_var_declaration(const ast::var_declaration& stmt);
@@ -36,23 +36,23 @@ private:
     void check_return_stmt(const ast::return_stmt& stmt);
     void check_func_declaration(const ast::func_declaration& stmt);
 
-    core::value_type type_of(const ast::expression& expr);
-    core::value_type type_of_literal(const ast::literal_expr& expr);
-    core::value_type type_of_variable(const ast::variable_expr& expr);
-    core::value_type type_of_binary(const ast::binary_expr& expr);
-    core::value_type type_of_unary(const ast::unary_expr& expr);
-	core::value_type type_of_postfix(const ast::postfix_expr& expr);
-    core::value_type type_of_call(const ast::call_expr& expr);
+    core::type type_of(const ast::expression& expr);
+    core::type type_of_literal(const ast::literal_expr& expr);
+    core::type type_of_variable(const ast::variable_expr& expr);
+    core::type type_of_binary(const ast::binary_expr& expr);
+    core::type type_of_unary(const ast::unary_expr& expr);
+	core::type type_of_postfix(const ast::postfix_expr& expr);
+    core::type type_of_call(const ast::call_expr& expr);
 
 	static bool is_lvalue(const ast::expression& expr);
 
     core::error_reporter& reporter_;
     symbol_table symbols_;
-    std::optional<core::value_type> curr_return_type_;
+    std::optional<core::type> curr_return_type_;
 
 	struct builtin_overload {
-		std::vector<core::value_type> param_types_;
-		core::value_type return_type_;
+		std::vector<core::type> param_types_;
+		core::type return_type_;
 	};
 
 	std::unordered_map<std::string, std::vector<builtin_overload>> builtins_;

@@ -5,19 +5,18 @@
 
 
 #include "semantics/symbol_table.hpp"
-#include <algorithm>
+#include "core/token/token_types.hpp"
 
 namespace semantics {
 
-void symbol_table::define(const std::string& name, core::value_type type) {
-    symbol_info info{ type, symbol_kind::VARIABLE, false, {} };
-    define(name, std::move(info));
+void symbol_table::define(const std::string& name, core::type type) {
+    symbol_info info{ std::move(type), symbol_kind::VARIABLE, false };
+    scoped_map::define(name, std::move(info));
 }
 
-void symbol_table::define_function(const std::string& name, core::value_type return_type,
-    const std::vector<core::value_type>& param_types) {
-    symbol_info info{ return_type, symbol_kind::FUNCTION, true, param_types };
-    define(name, std::move(info));
+void symbol_table::define_function(const std::string& name, core::type func_type) {
+    symbol_info info{ std::move(func_type), symbol_kind::FUNCTION, true };
+    scoped_map::define(name, std::move(info));
 }
 
 void symbol_table::mark_initialized(const std::string& name) {

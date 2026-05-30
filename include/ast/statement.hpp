@@ -8,6 +8,7 @@
 #pragma once
 
 #include "ast/expression.hpp"
+#include "core/token/token_types.hpp"
 #include <vector>
 #include <variant>
 #include <memory>
@@ -29,13 +30,13 @@ struct expression_stmt {
 };
 
 struct var_declaration {
-	core::value_type type_{};
+	core::type type_{};
 	core::token name_{};
 	expr_ptr initializer_{};
 
 	var_declaration() = default;
-	var_declaration(core::value_type t, const core::token& n, expr_ptr init)
-		: type_(t), name_(n), initializer_(std::move(init)) {
+	var_declaration(core::type t, const core::token& n, expr_ptr init)
+		: type_(std::move(t)), name_(n), initializer_(std::move(init)) {
 	}
 };
 
@@ -98,25 +99,24 @@ struct return_stmt {
 };
 
 struct func_param {
-    core::value_type type_{};
+    core::type type_{};
     core::token name_{};
 
 	func_param() = default;
-	func_param(core::value_type t, const core::token& n)
-		: type_(t), name_(n) {
+	func_param(core::type t, const core::token& n)
+		: type_(std::move(t)), name_(n) {
 	}
 };
 
 struct func_declaration {
-    core::value_type return_type_{};
-    core::token name_{};
+	core::type return_type_{};
+	core::token name_{};
 	std::vector<func_param> params_{};
 	std::unique_ptr<block_stmt> body_{};
 
 	func_declaration() = default;
-	func_declaration(core::value_type ret_type, const core::token& n)
-		: return_type_(ret_type), name_(n) {
-	}
+	func_declaration(core::type ret_type, const core::token& n)
+		: return_type_(std::move(ret_type)), name_(n) {}
 };
 
 struct statement {

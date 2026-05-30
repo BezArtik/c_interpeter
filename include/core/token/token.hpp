@@ -11,7 +11,6 @@
 namespace core {
 
 enum class token_type : uint8_t;
-enum class value_type : uint8_t;
 
 struct token {
     token_type type_;

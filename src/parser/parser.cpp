@@ -72,7 +72,7 @@ ast::stmt_ptr parser::declaration() {
     try {
         for (auto tt : core::type_tokens) {
             if (match({ tt })) {
-                auto type_opt = core::token_to_value_type(prev().type_);
+                auto type_opt = core::token_to_type(prev().type_);
                 if (!type_opt) error(prev(), core::error_code::unknown_type);
 
                 auto type = *type_opt;
@@ -82,7 +82,7 @@ ast::stmt_ptr parser::declaration() {
                 if (match({ core::token_type::LEFT_PAREN })) {
                     return func_declaration(type, name);
                 } else {
-                    if (type == core::value_type::VOID) {
+                    if (type.is_void()) {
 						error(prev(), core::error_code::void_variable);
                     }
                     return var_declaration(type, name);
@@ -96,12 +96,10 @@ ast::stmt_ptr parser::declaration() {
     }
 }
 
-ast::stmt_ptr parser::var_declaration(core::value_type type, const core::token& name) {
+ast::stmt_ptr parser::var_declaration(core::type type, const core::token& name) {
     ast::expr_ptr initializer{};
-    if (match({ core::token_type::EQUAL })) {
-        initializer = expression();
-    }
-
+    if (match({ core::token_type::EQUAL })) initializer = expression();
+        
     consume(core::token_type::SEMICOLON, core::error_code::expected_semicolon);
 
     return std::make_unique<ast::statement>(
@@ -109,7 +107,7 @@ ast::stmt_ptr parser::var_declaration(core::value_type type, const core::token& 
     );
 }
 
-ast::stmt_ptr parser::func_declaration(core::value_type return_type, const core::token& name) {
+ast::stmt_ptr parser::func_declaration(core::type return_type, const core::token& name) {
     ast::func_declaration func(return_type, name);
 
     if (!check(core::token_type::RIGHT_PAREN)) {
@@ -130,13 +128,13 @@ ast::stmt_ptr parser::func_declaration(core::value_type return_type, const core:
 }
 
 ast::func_param parser::parse_param() {
-    core::value_type type{};
+    core::type type{};
     bool found = false;
 
     for (auto tt : core::type_tokens) {
         if (match({ tt })) {
-            auto type_opt = core::token_to_value_type(prev().type_);
-            if (type_opt && *type_opt != core::value_type::VOID) {
+            auto type_opt = core::token_to_type(prev().type_);
+            if (type_opt && !type_opt->is_void()) {
                 type = *type_opt;
                 found = true;
                 break;
@@ -183,7 +181,7 @@ ast::stmt_ptr parser::for_statement() {
     if (match({ core::token_type::SEMICOLON })) {}
     else if (match({ core::token_type::INT_KEYWORD, core::token_type::DOUBLE_KEYWORD,
                      core::token_type::BOOL_KEYWORD, core::token_type::STRING_KEYWORD })) {
-        auto type_opt = core::token_to_value_type(prev().type_);
+        auto type_opt = core::token_to_type(prev().type_);
         if (!type_opt) error(prev(), core::error_code::unknown_type);
         initializer = var_declaration(*type_opt,
             consume(core::token_type::IDENTIFIER, core::error_code::expected_identifier));

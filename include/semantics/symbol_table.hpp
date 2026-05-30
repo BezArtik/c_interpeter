@@ -12,6 +12,7 @@
 
 #pragma once
 #include "core/token/token.hpp"
+#include "core/token/token_types.hpp"
 #include "core/utils/scoped_map.hpp"
 #include <string>
 #include <vector>
@@ -28,25 +29,18 @@ enum class symbol_kind : uint8_t {
 	FUNCTION
 };
 
-struct func_info {
-	core::value_type return_type_{};
-	std::vector<core::value_type> param_types_{};
-};
-
 struct symbol_info {
-	core::value_type type_{};
+	core::type type_;
 	symbol_kind kind_{};
 	bool initialized_{};
-	std::vector<core::value_type> param_types_{};
 };
 
 class symbol_table : public core::scoped_map<symbol_info> {
 public:
     using core::scoped_map<symbol_info>::define;
 
-    void define(const std::string& name, core::value_type type);
-    void define_function(const std::string& name, core::value_type return_type,
-        const std::vector<core::value_type>& param_types);
+    void define(const std::string& name, core::type type);
+    void define_function(const std::string& name, core::type func_type);
     void mark_initialized(const std::string& name);
 };
 

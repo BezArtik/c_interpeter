@@ -78,28 +78,24 @@ void interpreter::execute_expression_stmt(const ast::expression_stmt& stmt) {
 void interpreter::execute_var_declaration(const ast::var_declaration& stmt) {
     std::string name{ stmt.name_.lexeme_ };
 
-    auto init_val = [&]() {
-        switch (stmt.type_) {
-        case core::value_type::INT:    return value(0);
-        case core::value_type::DOUBLE: return value(0.0);
-        case core::value_type::BOOL:   return value(false);
-        case core::value_type::STRING: return value(std::string(""));
-        case core::value_type::VOID:   return value();
-		default: error(core::error_code::unknown_type, stmt.name_.line_, stmt.name_.column_);
-        }
-        }();
+    value init_val;
+    if (stmt.type_ == core::type::int_type())         init_val = value(int64_t{ 0 });
+    else if (stmt.type_ == core::type::double_type()) init_val = value(0.0);
+    else if (stmt.type_ == core::type::bool_type())   init_val = value(false);
+    else if (stmt.type_ == core::type::string_type()) init_val = value(std::string(""));
+    else if (stmt.type_.is_void())                    init_val = value();
+    else error(core::error_code::unknown_type, stmt.name_.line_, stmt.name_.column_);
 
     if (stmt.initializer_) {
         auto init = evaluate(*stmt.initializer_);
-        auto init_type = init.type();
-        auto target_type = stmt.type_;
-
-        if (init_type == core::value_type::INT && target_type == core::value_type::DOUBLE) {
-            init_val = value(static_cast<double>(init.as_int().value()));
-        } else if (init_type != target_type) {
-			error(core::error_code::type_mismatch_initialization, stmt.name_.line_, stmt.name_.column_, name);
+        if (stmt.type_.is_assignable_from(init.type())) {
+            if (stmt.type_ == core::type::double_type() && init.type() == core::type::int_type()) {
+                init_val = value(static_cast<double>(init.as_int().value()));
+            } else {
+                init_val = std::move(init);
+            }
         } else {
-            init_val = std::move(init);
+            error(core::error_code::type_mismatch_initialization, stmt.name_.line_, stmt.name_.column_, name);
         }
     }
 
@@ -281,12 +277,12 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr) {
 
     switch (expr.op_.type_) {
     case core::token_type::MINUS: {
-        if (operand.type() == core::value_type::INT) {
+        if (operand.type() == core::type::int_type()) {
             return value(-operand.as_int().value());
-        } else if (operand.type() == core::value_type::DOUBLE) {
+        } else if (operand.type() == core::type::double_type()) {
             return value(-operand.as_double().value());
         }
-		error(core::error_code::unary_minus_requires_numeric, expr.op_.line_, expr.op_.column_);
+        error(core::error_code::unary_minus_requires_numeric, expr.op_.line_, expr.op_.column_);
     }
     case core::token_type::BANG: {
         return operand.not_op();
@@ -297,7 +293,7 @@ value interpreter::evaluate_unary(const ast::unary_expr& expr) {
         std::string name{ var.name_.lexeme_ };
         auto old_val = evaluate_variable(var);
         value new_val;
-        if (old_val.type() == core::value_type::INT) {
+        if (old_val.type() == core::type::int_type()) {
             auto v = old_val.as_int().value();
             new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
         } else {
@@ -317,7 +313,7 @@ value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
     std::string name{ var.name_.lexeme_ };
     auto old_val = evaluate_variable(var);
     value new_val{};
-    if (old_val.type() == core::value_type::INT) {
+    if (old_val.type() == core::type::int_type()) {
         auto v = old_val.as_int().value();
         new_val = value(expr.op_.type_ == core::token_type::INCREMENT ? v + 1 : v - 1);
     } else {
@@ -333,15 +329,14 @@ value interpreter::evaluate_postfix(const ast::postfix_expr& expr) {
 value interpreter::evaluate_call(const ast::call_expr& expr) {
     std::string name{ expr.callee_.lexeme_ };
 
-    auto builtin = current_env_->get_builtin(name);
-    if (builtin) {
-        std::vector<value> args;
-		args.reserve(expr.args_.size());
-		std::transform(expr.args_.begin(), expr.args_.end(), std::back_inserter(args),
-			[this](const auto& arg) { return evaluate(*arg); });
-        return (*builtin)(args);
-    }
+    std::vector<value> args;
+    args.reserve(expr.args_.size());
+    std::ranges::transform(expr.args_, std::back_inserter(args),
+        [this](const auto& arg) { return evaluate(*arg); });
 
+    auto builtin = current_env_->get_builtin(name);
+    if (builtin) return (*builtin)(args);
+        
     auto func_it = functions_.find(name);
     if (func_it == functions_.end()) 
 		error(core::error_code::undefined_function, expr.callee_.line_, expr.callee_.column_, name);
@@ -349,28 +344,22 @@ value interpreter::evaluate_call(const ast::call_expr& expr) {
 
     const auto& func = *func_it->second;
 
-    std::vector<value> args;
-    args.reserve(expr.args_.size());
-	std::transform(expr.args_.begin(), expr.args_.end(), std::back_inserter(args), 
-        [this](const auto& arg) { return evaluate(*arg); });
-
     scope_guard guard(current_env_);
 
-    for (auto& params : func.params_) {
-        std::string param_name{ params.name_.lexeme_ };
-        current_env_->define(param_name, std::move(params));
+    for (size_t i = 0; i < func.params_.size(); ++i) {
+        std::string param_name{ func.params_[i].name_.lexeme_ };
+        auto param_val = (i < args.size()) ? std::move(args[i]) : value();
+        current_env_->define(param_name, std::move(param_val));
     }
     
-    value result{};
+    value result;
     try {
         for (const auto& s : func.body_->statements_) execute(*s);
-        switch (func.return_type_) {
-        case core::value_type::INT:    result = value(0); break;
-        case core::value_type::DOUBLE: result = value(0.0); break;
-        case core::value_type::BOOL:   result = value(false); break;
-        case core::value_type::STRING: result = value(std::string("")); break;
-		default:                       result = value(); break;
-        }
+        if (func.return_type_ == core::type::int_type())         result = value(int64_t{ 0 });
+        else if (func.return_type_ == core::type::double_type()) result = value(0.0);
+        else if (func.return_type_ == core::type::bool_type())   result = value(false);
+        else if (func.return_type_ == core::type::string_type()) result = value(std::string(""));
+        else                                                     result = value();
     } catch (const return_exception& ret) {
         result = ret.return_value_;
     }
