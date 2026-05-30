@@ -15,7 +15,6 @@
 namespace parser {
 
 [[noreturn]] void parser::error(const core::token& token, core::error_code code) {
-	reporter_.error(token.line_, token.column_, code);
 	throw core::parse_error{ code, token.line_, token.column_ };
 }
 

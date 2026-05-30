@@ -61,8 +61,7 @@ int main(int argc, char* argv[]) {
         }
 
         semantics::type_checker checker(reporter);
-        bool sem_ok = checker.check(ast);
-        if (!sem_ok) {
+        if (!checker.check(ast)) {
             std::cerr << "Semantic errors found.\n";
             return 1;
         }

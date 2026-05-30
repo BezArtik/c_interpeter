@@ -55,9 +55,7 @@ interpreter::scope_guard::~scope_guard() {
 void interpreter::interpret(const std::vector<std::unique_ptr<ast::statement>>& statements) {
     try {
         for (const auto& stmt : statements) execute(*stmt);
-    } catch (const core::interpret_error& e) {
-		reporter_.error(e.line_, e.column_, e.code_);
-    }
+    } catch (const core::interpret_error& e) {}
 }
 
 void interpreter::execute(const ast::statement& stmt) {
