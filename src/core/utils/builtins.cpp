@@ -1,9 +1,5 @@
 // core/builtins.cpp
 
-// This file implements the built-in functions for the language. 
-// These functions are available by default and can be called from user code. 
-// Each built-in function is defined with its name, possible argument types (overloads),
-// return type, and implementation.
 
 #include "core/utils/builtins.hpp"
 #include "runtime/value.hpp"

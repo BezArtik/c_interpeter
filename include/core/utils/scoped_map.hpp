@@ -1,9 +1,5 @@
 // core/scoped_map.hpp
 
-// This header defines a template class `scoped_map` 
-// that manages a stack of scopes, each containing a 
-// mapping of string keys to values of type T.
-
 
 #pragma once
 #include <string>
@@ -13,6 +9,8 @@
 #include <optional>
 #include <functional>
 #include <stdexcept>
+#include <algorithm>
+#include <ranges>
 
 namespace core {
 
@@ -27,7 +25,7 @@ public:
         scopes_.push_back(std::make_unique<scope>());
     }
 
-    void pop() {
+    void pop() noexcept {
         if (scopes_.size() > 1) scopes_.pop_back();
     }
 
@@ -36,9 +34,8 @@ public:
     }
 
     std::optional<T> get(const std::string& name) const {
-		auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
-			[&](const auto& s) { return s->bindings_.contains(name); });
-		if (it != scopes_.rend()) return (*it)->bindings_[name];
+        auto* scope = find_scope(name);
+        if (scope) return scope->bindings_.at(name);
         return std::nullopt;
     }
 
@@ -47,19 +44,17 @@ public:
     }
 
     bool assign(const std::string& name, T value) {
-        auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
-            [&](const auto& s) { return s->bindings_.contains(name); });
-		if (it != scopes_.rend()) {
-			(*it)->bindings_[name] = std::move(value);
-			return true;
-		}
+        auto* scope = find_scope(name);
+        if (scope) {
+            scope->bindings_[name] = std::move(value);
+            return true;
+        }
         return false;
     }
 
     void update_if_exists(const std::string& name, std::function<void(T&)> updater) {
-		auto it = std::find_if(scopes_.rbegin(), scopes_.rend(), 
-            [&](const auto& s) { return s->bindings_.contains(name); });
-        if (it != scopes_.rend()) updater((*it)->bindings_[name]);
+        auto* scope = find_scope(name);
+        if (scope) updater(scope->bindings_.at(name));
     }
 
 private:
@@ -68,6 +63,18 @@ private:
         std::unordered_map<std::string, T> bindings_;
     };
     std::vector<std::unique_ptr<scope>> scopes_;
+
+    scope* find_scope(const std::string& name) {
+        auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
+            [&](const auto& s) { return s->bindings_.contains(name); });
+        return it != scopes_.rend() ? it->get() : nullptr;
+    }
+
+    const scope* find_scope(const std::string& name) const {
+        auto it = std::find_if(scopes_.rbegin(), scopes_.rend(),
+            [&](const auto& s) { return s->bindings_.contains(name); });
+        return it != scopes_.rend() ? it->get() : nullptr;
+    }
 
 };
 

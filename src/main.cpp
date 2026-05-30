@@ -1,11 +1,5 @@
 // src/main.cpp
 
-// This is the main entry point of the interpreter. It reads a source 
-// file, performs lexical analysis, parsing, 
-// semantic analysis, and then executes the program. 
-// It also handles errors at each stage and reports them to the user.
-
-
 #include "core/token/token.hpp"
 #include "core/error/error_report.hpp"
 #include "lexer/lexer.hpp"
@@ -17,6 +11,7 @@
 #include "runtime/value.hpp"
 #include "runtime/environment.hpp"
 #include "runtime/interpreter.hpp"
+#include "debug/debug.hpp"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -25,19 +20,28 @@
 #include <vector>
 #include <filesystem>
 
-
 int main(int argc, char* argv[]) {
-
     try {
+        bool debug = false;
+        std::string filename;
 
-        if (argc != 2) {
-            std::cerr << "Usage: " << argv[0] << " <source_file>\n";
+        for (int i = 1; i < argc; ++i) {
+            std::string_view arg(argv[i]);
+            if (arg == "--debug") {
+                debug = true;
+            } else {
+                filename = argv[i];
+            }
+        }
+
+        if (filename.empty()) {
+            std::cerr << "Usage: " << argv[0] << " [--debug] <source_file>\n";
             return 1;
         }
 
-        std::ifstream file(argv[1]);
+        std::ifstream file(filename);
         if (!file) {
-            std::cerr << "Error: cannot open file '" << argv[1] << "'\n";
+            std::cerr << "Error: cannot open file '" << filename << "'\n";
             return 1;
         }
 
@@ -48,6 +52,7 @@ int main(int argc, char* argv[]) {
         core::error_reporter reporter(source);
         lexer::lexer lex(source, reporter);
         auto tokens = lex.scan_tokens();
+        if (debug) debug::print_tokens(tokens);
         if (reporter.has_error()) {
             std::cerr << "Lexical errors found.\n";
             return 1;
@@ -55,18 +60,21 @@ int main(int argc, char* argv[]) {
 
         parser::parser p(tokens, reporter);
         auto ast = p.parse();
+        if (debug) debug::print_ast(ast); 
         if (reporter.has_error()) {
             std::cerr << "Syntax errors found.\n";
             return 1;
         }
 
         semantics::type_checker checker(reporter);
-        if (!checker.check(ast)) {
+        bool types_ok = checker.check(ast);
+        if (debug && types_ok) debug::print_semantic_info(ast);
+        if (reporter.has_error()) {
             std::cerr << "Semantic errors found.\n";
             return 1;
         }
 
-        runtime::interpreter interpreter(reporter);
+        runtime::interpreter interpreter(reporter, debug);
         interpreter.interpret(ast);
         if (reporter.has_error()) {
             std::cerr << "Runtime errors found.\n";
@@ -75,10 +83,10 @@ int main(int argc, char* argv[]) {
 
         std::cout << "Program finished successfully.\n";
 
-	} catch (const std::exception& e) {
-		std::cerr << "Fatal Error: " << e.what() << "\n";
-		return 1;
-	}
+    } catch (const std::exception& e) {
+        std::cerr << "Fatal Error: " << e.what() << "\n";
+        return 1;
+    }
 
     return 0;
 }

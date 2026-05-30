@@ -1,8 +1,5 @@
 // runtime/value.cpp
 
-// This file implements the value class which represents a runtime value in the interpreter. 
-// It supports various types and operations on them.
-
 
 #include "runtime/value.hpp"
 #include "core/token/token_types.hpp"

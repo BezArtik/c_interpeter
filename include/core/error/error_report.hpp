@@ -1,7 +1,5 @@
 // core/error_report.hpp
 
-// This file defines the error_reporter class 
-// for reporting errors in the core namespace.
 
 #pragma once
 #include "core/error/error_codes.hpp"

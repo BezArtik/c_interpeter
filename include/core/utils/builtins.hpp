@@ -1,13 +1,5 @@
 // core/builtins.hpp
 
-// This file defines the built-in functions 
-// available in the language. Each built-in 
-// function is represented by a builtin_def struct, 
-// which includes the function's name, its overloads 
-// (parameter types), return type, and implementation. 
-// The builtins() function returns a list of all built-in 
-// unctions that can be registered in the environment.
-
 
 #pragma once
 #include "core/token/token.hpp"

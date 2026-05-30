@@ -1,7 +1,5 @@
 // core/error_codes.hpp
 
-// This file defines the error codes and their corresponding messages
-// for the core namespace, covering lexer, parser, type checker, and runtime errors.
 
 #pragma once
 #include <cstdint>

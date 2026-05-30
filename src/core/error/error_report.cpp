@@ -1,8 +1,5 @@
 // core/error_report.cpp
 
-// This file implements the error_reporter class 
-// for reporting errors in the core namespace.
-
 
 #include "core/error/error_report.hpp"
 #include <algorithm>

@@ -1,8 +1,5 @@
 // runtime/environment.hpp
 
-// The environment class manages variable scopes 
-// and built-in functions for the runtime.
-
 
 #pragma once
 #include "runtime/value.hpp"

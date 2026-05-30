@@ -12,6 +12,7 @@ target_sources(interpreter
         core/token/keywords.cpp
         core/utils/builtins.cpp
         core/token/token_types.cpp
+        core/token/token.cpp
 
         semantics/symbol_table.cpp
         semantics/type_check.cpp
@@ -19,6 +20,8 @@ target_sources(interpreter
         runtime/value.cpp
         runtime/environment.cpp
         runtime/interpreter.cpp
+
+        debug/debug.cpp
 )
 
 target_include_directories(interpreter

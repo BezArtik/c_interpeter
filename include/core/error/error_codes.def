@@ -1,13 +1,12 @@
 // core/error_codes.def
 
-// This file defines error codes and 
-// their corresponding messages for the interpreter.
 
 // Lexer
 ERROR(unexpected_character,         "Unexpected character")
 ERROR(unterminated_string,          "Unterminated string literal")
 
 // Parser
+ERROR(unexpected_token,             "Unexpected token")
 ERROR(expected_expression,          "Expected expression")
 ERROR(expected_semicolon,           "Expected ';'")
 ERROR(expected_identifier,          "Expected identifier")

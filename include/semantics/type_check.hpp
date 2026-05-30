@@ -1,8 +1,5 @@
 // semantics/type_check.hpp
 
-// This file defines the type_checker class, which 
-// performs semantic analysis and type checking on the AST.
-
 
 #pragma once
 #include "ast/statement.hpp"

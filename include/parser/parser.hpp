@@ -1,8 +1,5 @@
 // parser/parser.hpp
 
-// The parser class is responsible for converting a
-// sequence of tokens into an abstract syntax tree (AST).
-
 
 #pragma once
 #include "ast/statement.hpp"
@@ -42,26 +39,28 @@ private:
     ast::stmt_ptr block_statement();
     ast::stmt_ptr return_statement();
 
-    ast::expr_ptr make_binary(ast::expr_ptr left, core::token op, ast::expr_ptr right);
-    ast::expr_ptr parse_binary(
+    ast::expression parse_binary(
         std::initializer_list<core::token_type> operators,
-        std::function<ast::expr_ptr()> sub_parser);
-    ast::expr_ptr expression();
-    ast::expr_ptr equality();
-    ast::expr_ptr assignment();
-    ast::expr_ptr logic_or();
-    ast::expr_ptr logic_and();
-    ast::expr_ptr comparison();
-    ast::expr_ptr term();
-    ast::expr_ptr factor();
-    ast::expr_ptr unary();
+        std::function<ast::expression()> sub_parser);
+    ast::expression expression();
+    ast::expression equality();
+    ast::expression assignment();
+    ast::expression logic_or();
+    ast::expression logic_and();
+    ast::expression comparison();
+    ast::expression term();
+    ast::expression factor();
+    ast::expression unary();
 
-	ast::expr_ptr postfix_unary(ast::expr_ptr operand);
-    ast::expr_ptr primary();
-    ast::expr_ptr finish_call(const core::token& callee);
+    ast::expression postfix_unary(ast::expr_ptr operand);
+    ast::expression primary();
+    ast::expression finish_call(const core::token& callee);
 
     ast::func_param parse_param();
     void synchronize();
+
+    static bool can_start_statement(const core::token& t);
+    static bool is_type_keyword(const core::keyword_info& kw);
 
 	[[noreturn]] void error(const core::token& token, core::error_code code);
 

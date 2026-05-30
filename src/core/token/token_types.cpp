@@ -50,7 +50,7 @@ type type::function_type(type return_type, std::vector<type> param_types) {
 
 bool type::is_primitive() const noexcept {
     return kind_ == kind::INT || kind_ == kind::DOUBLE ||
-        kind_ == kind::BOOL || kind_ == kind::STRING;
+           kind_ == kind::BOOL || kind_ == kind::STRING;
 }
 
 bool type::is_numeric() const noexcept {
@@ -95,7 +95,11 @@ bool type::is_assignable_from(const type& source) const noexcept {
     return false;
 }
 
-
+type type::common_arithmetic_type(const type& other) const noexcept {
+    if (!is_numeric() || !other.is_numeric()) return unknown_type();
+    if (kind_ == kind::DOUBLE || other.kind_ == kind::DOUBLE) return double_type();
+    return int_type();
+}
 
 
 }

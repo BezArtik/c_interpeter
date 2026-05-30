@@ -1,10 +1,5 @@
 // runtime/value.hpp
 
-// This file defines the runtime value class, 
-// which represents a value in the runtime environment. 
-// It can hold different types of values (int, double, bool, string) 
-// and provides methods for type conversion and basic operations.
-
 
 #pragma once
 #include "core/token/token_types.hpp"

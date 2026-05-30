@@ -1,8 +1,5 @@
 // semantics/symbol_table.cpp
 
-// This file implements the symbol table for the semantic analysis phase 
-// of the compiler. 
-
 
 #include "semantics/symbol_table.hpp"
 #include "core/token/token_types.hpp"

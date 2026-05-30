@@ -1,15 +1,5 @@
 // runtime/environment.cpp
 
-// This code implements the `environment` class, 
-// which manages variable scopes and built-in functions 
-// for a runtime environment. The class allows for defining and 
-// assigning variables, as well as retrieving their values. 
-// It also supports defining and retrieving built-in functions. 
-// The implementation uses a vector of unique pointers to manage multiple scopes, 
-// allowing for nested variable definitions. The `get` method searches through 
-// the scopes from the innermost to the outermost to find a variable, while the
-// `assign` method updates an existing variable or throws an error if it is not defined.
-
 
 #include "runtime/environment.hpp"
 #include <optional>

@@ -1,7 +1,5 @@
 // semantics/type_check.cpp
 
-// This file implements the type checker for a programming language.
-
 
 #include "semantics/type_check.hpp"
 #include "ast/expression.hpp"
@@ -50,7 +48,7 @@ void type_checker::check_statement(const ast::statement& stmt) {
 }
 
 void type_checker::check_expression_stmt(const ast::expression_stmt& stmt) {
-    type_of(*stmt.expr_);
+    type_of(stmt.expr_);
 }
 
 void type_checker::check_var_declaration(const ast::var_declaration& stmt) {
@@ -84,7 +82,7 @@ void type_checker::check_block(const ast::block_stmt& stmt) {
 }
 
 void type_checker::check_while(const ast::while_stmt& stmt) {
-    auto cond_type = type_of(*stmt.condition_);
+    auto cond_type = type_of(stmt.condition_);
     if (cond_type != core::type::bool_type() && !cond_type.is_unknown()) {
         reporter_.error(stmt.line_, stmt.column_, core::error_code::condition_not_bool);
     }
@@ -106,7 +104,7 @@ void type_checker::check_for(const ast::for_stmt& stmt) {
 }
 
 void type_checker::check_if(const ast::if_stmt& stmt) {
-    auto cond_type = type_of(*stmt.condition_);
+    auto cond_type = type_of(stmt.condition_);
     if (cond_type != core::type::bool_type() && !cond_type.is_unknown()) {
         reporter_.error(stmt.line_, stmt.column_, core::error_code::condition_not_bool);
     }
@@ -177,28 +175,29 @@ core::type type_checker::type_of(const ast::expression& expr) {
     return std::visit(core::overloaded{
         [this](const ast::literal_expr& e) { return type_of_literal(e); },
         [this](const ast::variable_expr& e) { return type_of_variable(e); },
-        [this](const ast::binary_expr& e) { return type_of_binary(e); },
-        [this](const ast::unary_expr& e) { return type_of_unary(e); },
-        [this](const ast::postfix_expr& e) { return type_of_postfix(e); },
-        [this](const ast::call_expr& e) { return type_of_call(e); },
-        }, expr.data_);
+        [this](const std::unique_ptr<ast::binary_expr>& e) { return type_of_binary(*e); },
+        [this](const std::unique_ptr<ast::unary_expr>& e) { return type_of_unary(*e); },
+        [this](const std::unique_ptr<ast::postfix_expr>& e) { return type_of_postfix(*e); },
+        [this](const std::unique_ptr<ast::call_expr>& e) { return type_of_call(*e); },
+        }, expr);
 }
 
 core::type type_checker::type_of_literal(const ast::literal_expr& expr) {
     const auto& token = expr.value_;
-    switch (token.type_) {
-    case core::token_type::NUMBER:
-        return core::is_double_literal(token.lexeme_)
-            ? core::type::double_type() : core::type::int_type();
-    case core::token_type::TRUE:
-    case core::token_type::FALSE:
-        return core::type::bool_type();
-    case core::token_type::STRING:
-        return core::type::string_type();
-    default:
-        reporter_.error(token.line_, token.column_, core::error_code::unexpected_literal);
-        return core::type::unknown_type();
+
+    if (token.type_ == core::token_type::NUMBER) {
+        return token.is_double_literal()
+            ? core::type::double_type()
+            : core::type::int_type();
     }
+    if (token.type_ == core::token_type::STRING) return core::type::string_type();
+    if (token.is_keyword()) {
+        auto kw = token.as_keyword();
+        if (kw && (kw->lexeme_ == "true" || kw->lexeme_ == "false")) return core::type::bool_type();
+    }
+
+    reporter_.error(token.line_, token.column_, core::error_code::unexpected_literal);
+    return core::type::unknown_type();
 }
 
 core::type type_checker::type_of_variable(const ast::variable_expr& expr_) {
@@ -213,16 +212,14 @@ core::type type_checker::type_of_variable(const ast::variable_expr& expr_) {
 }
 
 core::type type_checker::type_of_binary(const ast::binary_expr& expr) {
-    auto left = type_of(*expr.left_);
-    auto right = type_of(*expr.right_);
-    if (left.is_unknown() || right.is_unknown()) {
-        return core::type::unknown_type();
-    }
+    auto left = type_of(expr.left_);
+    auto right = type_of(expr.right_);
+    if (left.is_unknown() || right.is_unknown()) return core::type::unknown_type();
 
     auto op = expr.op_.type_;
 
     if (op == core::token_type::EQUAL) {
-        if (!left.is_assignable_from(right) || !is_lvalue(*expr.left_)) {
+        if (!left.is_assignable_from(right) || !is_lvalue(expr.left_)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 core::error_code::type_mismatch_assignment);
             return core::type::unknown_type();
@@ -236,7 +233,7 @@ core::type type_checker::type_of_binary(const ast::binary_expr& expr) {
         op == core::token_type::SLASH_EQUAL ||
         op == core::token_type::PERCENT_EQUAL) {
 
-        if (!is_lvalue(*expr.left_)) {
+        if (!is_lvalue(expr.left_)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 core::error_code::compound_requires_lvalue);
             return core::type::unknown_type();
@@ -288,11 +285,11 @@ core::type type_checker::type_of_binary(const ast::binary_expr& expr) {
 }
 
 bool type_checker::is_lvalue(const ast::expression& expr) {
-    return std::holds_alternative<ast::variable_expr>(expr.data_);
+    return std::holds_alternative<ast::variable_expr>(expr);
 }
 
 core::type type_checker::type_of_unary(const ast::unary_expr& expr) {
-    auto operand_type = type_of(*expr.operand_);
+    auto operand_type = type_of(expr.operand_);
     if (operand_type.is_unknown()) return core::type::unknown_type();
 
     auto op = expr.op_.type_;
@@ -312,7 +309,7 @@ core::type type_checker::type_of_unary(const ast::unary_expr& expr) {
                 core::error_code::increment_requires_numeric);
             return core::type::unknown_type();
         }
-        if (!is_lvalue(*expr.operand_)) {
+        if (!is_lvalue(expr.operand_)) {
             reporter_.error(expr.op_.line_, expr.op_.column_,
                 core::error_code::increment_requires_lvalue);
             return core::type::unknown_type();
@@ -335,7 +332,7 @@ core::type type_checker::type_of_unary(const ast::unary_expr& expr) {
 }
 
 core::type type_checker::type_of_postfix(const ast::postfix_expr& expr) {
-    auto operand_type = type_of(*expr.operand_);
+    auto operand_type = type_of(expr.operand_);
     if (operand_type.is_unknown()) return core::type::unknown_type();
 
     if (!operand_type.is_numeric()) {
@@ -343,7 +340,7 @@ core::type type_checker::type_of_postfix(const ast::postfix_expr& expr) {
             core::error_code::increment_requires_numeric);
         return core::type::unknown_type();
     }
-    if (!is_lvalue(*expr.operand_)) {
+    if (!is_lvalue(expr.operand_)) {
         reporter_.error(expr.op_.line_, expr.op_.column_,
             core::error_code::increment_requires_lvalue);
         return core::type::unknown_type();
@@ -358,7 +355,7 @@ core::type type_checker::type_of_call(const ast::call_expr& expr) {
         std::vector<core::type> arg_types;
         arg_types.reserve(expr.args_.size());
         std::ranges::transform(expr.args_, std::back_inserter(arg_types),
-            [this](const auto& arg) { return type_of(*arg); });
+            [this](const auto& arg) { return type_of(arg); });
 
         auto overload = std::ranges::find_if(it->second,
             [&](const auto& o) {
@@ -395,7 +392,7 @@ core::type type_checker::type_of_call(const ast::call_expr& expr) {
     }
 
     for (size_t i = 0; i < expr.args_.size(); i++) {
-        auto arg_type = type_of(*expr.args_[i]);
+        auto arg_type = type_of(expr.args_[i]);
         if (arg_type.is_unknown()) {
             return core::type::unknown_type();
         }

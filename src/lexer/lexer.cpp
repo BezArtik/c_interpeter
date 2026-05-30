@@ -1,12 +1,5 @@
 // lexer/lexer.cpp
 
-// This file implements the lexer for a programming language. 
-// The lexer takes a source code string and produces a list of tokens, 
-// which are the basic building blocks of the language's syntax. 
-// The lexer handles various token types, including identifiers, 
-// numbers, strings, and operators. It also reports errors 
-// for unexpected characters and unterminated strings.
-
 
 #include "lexer/lexer.hpp"
 #include "core/token/token_types.hpp"
@@ -29,7 +22,7 @@ std::vector<core::token> lexer::scan_tokens() {
         scan_token();
     }
 
-    tokens_.push_back({ core::token_type::END_OF_FILE, "", line_, column_ });
+    tokens_.emplace_back(core::token_type::END_OF_FILE, "", line_, column_);
     return tokens_;
 }
 
@@ -94,7 +87,9 @@ void lexer::consume_identifier() {
 
     auto lexeme = source_.substr(start_, current_ - start_);
     auto kw = core::lookup_keyword(lexeme);
-    kw ? add_token(*kw) : add_token(core::token_type::IDENTIFIER);
+
+    kw ? add_token(core::token_type::KEYWORD) 
+       : add_token(core::token_type::IDENTIFIER);
 }
 
 void lexer::consume_number() {
@@ -154,7 +149,7 @@ bool lexer::is_at_end() const noexcept {
 
 void lexer::add_token(core::token_type type) {
     auto text = source_.substr(start_, current_ - start_);
-    tokens_.push_back({ type, text, line_, column_ });
+    tokens_.emplace_back(type, text, line_, column_);
 }
 
 
