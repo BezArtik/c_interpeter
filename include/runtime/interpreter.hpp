@@ -49,7 +49,7 @@ private:
     value evaluate_call(const ast::call_expr& expr);
 
 	[[noreturn]] void error(core::error_code code, 
-        size_t line = 0, size_t column = 0, std::string_view msg = {});
+        core::line_number line = 0, core::column_number column = 0, std::string_view msg = {});
 
     core::error_reporter& reporter_;
     std::unique_ptr<environment> global_env_;

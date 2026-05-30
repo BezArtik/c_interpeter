@@ -23,7 +23,7 @@
 
 namespace runtime {
 
-[[noreturn]] void interpreter::error(core::error_code code, size_t line, size_t column, std::string_view msg) {
+[[noreturn]] void interpreter::error(core::error_code code, core::line_number line, core::column_number column, std::string_view msg) {
 	reporter_.error(line, column, code, msg);
     throw core::interpret_error{ code, line, column };
 }

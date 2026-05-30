@@ -27,20 +27,20 @@ inline const std::unordered_map<error_code, error_message> error_messages = {
 
 struct parse_error : std::runtime_error {
     error_code code_;
-    size_t line_ = 0;
-    size_t column_ = 0;
+    line_number line_ = 0;
+    column_number column_ = 0;
 
-    parse_error(error_code c, size_t line = 0, size_t col = 0)
-        : std::runtime_error("Parse error"), code_(c), line_(line), column_(col) {}
+    parse_error(error_code c, line_number line = 0, column_number column = 0)
+        : std::runtime_error("Parse error"), code_(c), line_(line), column_(column) {}
 };
 
 struct interpret_error : std::runtime_error {
     error_code code_;
-    size_t line_ = 0;
-    size_t column_ = 0;
+    line_number line_ = 0;
+    column_number column_ = 0;
 
-    interpret_error(error_code c, size_t line = 0, size_t col = 0)
-        : std::runtime_error("Interpret error"), code_(c), line_(line), column_(col) {}
+    interpret_error(error_code c, line_number line = 0, column_number column = 0)
+        : std::runtime_error("Interpret error"), code_(c), line_(line), column_(column) {}
 };
 
 } // namespace core

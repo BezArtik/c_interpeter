@@ -10,17 +10,20 @@
 
 namespace core {
 
+using line_number = uint32_t;
+using column_number = uint32_t;
+
 struct keyword_info;
 enum class token_type : uint8_t;
 
 struct token {
     token_type type_{};
     std::string_view lexeme_;
-    size_t line_{};
-    size_t column_{};
+    line_number line_{};
+    column_number column_{};
 
     token() = default;
-    token(token_type type, std::string_view lex, size_t line, size_t column);
+    token(token_type type, std::string_view lex, line_number line, column_number column);
 
     bool is_keyword() const noexcept;
     bool is_double_literal() const noexcept;

@@ -16,11 +16,11 @@ using stmt_ptr = std::unique_ptr<statement>;
 
 struct expression_stmt {
     expression expr_;
-    size_t line_;
-    size_t column_;
+    core::line_number line_;
+    core::column_number column_;
 
     expression_stmt() = default;
-    expression_stmt(expression e, size_t line, size_t column)
+    expression_stmt(expression e, core::line_number line, core::column_number column)
         : expr_(std::move(e)), line_(line), column_(column) {
     }
 };
@@ -38,21 +38,21 @@ struct var_declaration {
 
 struct block_stmt {
     std::vector<stmt_ptr> statements_;
-    size_t line_;
-    size_t column_;
+    core::line_number line_;
+    core::column_number column_;
 
     block_stmt() = default;
-    block_stmt(size_t line, size_t column) : line_(line), column_(column) {}
+    block_stmt(core::line_number line, core::column_number column) : line_(line), column_(column) {}
 };
 
 struct while_stmt {
     expression condition_;
     stmt_ptr body_;
-    size_t line_;
-    size_t column_;
+    core::line_number line_;
+    core::column_number column_;
 
     while_stmt() = default;
-    while_stmt(expression cond, stmt_ptr body, size_t line, size_t column)
+    while_stmt(expression cond, stmt_ptr body, core::line_number line, core::column_number column)
         : condition_(std::move(cond)), body_(std::move(body)), line_(line), column_(column) {
     }
 };
@@ -62,13 +62,13 @@ struct for_stmt {
     std::optional<expression> condition_;
     std::optional<expression> increment_;
     stmt_ptr body_;
-    size_t line_;
-    size_t column_;
+    core::line_number line_;
+    core::column_number column_;
 
     for_stmt() = default;
     for_stmt(stmt_ptr init, std::optional<expression> cond,
         std::optional<expression> inc, stmt_ptr body,
-        size_t line, size_t column)
+        core::line_number line, core::column_number column)
         : initializer_(std::move(init)), condition_(std::move(cond)),
         increment_(std::move(inc)), body_(std::move(body)),
         line_(line), column_(column) {
@@ -79,12 +79,12 @@ struct if_stmt {
     expression condition_;
     stmt_ptr then_branch_;
     stmt_ptr else_branch_;
-    size_t line_;
-    size_t column_;
+    core::line_number line_;
+    core::column_number column_;
 
     if_stmt() = default;
     if_stmt(expression cond, stmt_ptr then_branch,
-        stmt_ptr else_branch, size_t line, size_t column)
+        stmt_ptr else_branch, core::line_number line, core::column_number column)
         : condition_(std::move(cond)), then_branch_(std::move(then_branch)),
         else_branch_(std::move(else_branch)), line_(line), column_(column) {
     }

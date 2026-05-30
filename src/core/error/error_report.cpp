@@ -1,6 +1,6 @@
 // core/error_report.cpp
 
-
+#include "core/token/token.hpp"
 #include "core/error/error_report.hpp"
 #include <algorithm>
 #include <cctype>
@@ -17,7 +17,7 @@ void error_reporter::clear_errors() noexcept {
 	had_error_ = false;
 }
 
-void error_reporter::report(size_t line, size_t column,
+void error_reporter::report(line_number line, column_number column,
                             std::string_view kind, const std::string& msg) {
     std::cerr << std::format("[line {}:{}] {}: {}\n", line, column, kind, msg);
 
